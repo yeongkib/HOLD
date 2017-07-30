@@ -14,6 +14,7 @@
 
 #include <fstream>
 #include <BWAPI/Client/UnitImpl.h>
+#include <BWAPI/Client/GameData.h>
 
 
 using namespace BWAPI;
@@ -38,18 +39,18 @@ Calculated as My Influence+OpponentInfluence
 Vulnerability Map
 Calculated as Tension map -Abs(Influence map)
 */
-std::vector<char> myinfluenceGround;// (dim1, std::vector<double>(dim2));
-std::vector<char> myinfluenceAir;
-std::vector<char> opinfluenceGround;
-std::vector<char> opinfluenceAir;
-std::vector<char> influenceGround;
-std::vector<char> influenceAir;
-std::vector<char> tensionGround;
-std::vector<char> tensionAir;
-std::vector<char> tensionTotal;
-std::vector<char> vulGround;
-std::vector<char> vulAir;
-std::vector<char> vulTotal;
+std::vector<short> myinfluenceGround;// (dim1, std::vector<double>(dim2));
+std::vector<short> myinfluenceAir;
+std::vector<short> opinfluenceGround;
+std::vector<short> opinfluenceAir;
+std::vector<short> influenceGround;
+std::vector<short> influenceAir;
+std::vector<short> tensionGround;
+std::vector<short> tensionAir;
+std::vector<short> tensionTotal;
+std::vector<short> vulGround;
+std::vector<short> vulAir;
+std::vector<short> vulTotal;
 static int mapWidth = 0;
 static int mapHeight = 0;
 
@@ -560,21 +561,14 @@ namespace HOLD
 #include "BehaviorTree.hpp"
 #include "Drone.hpp"
 
-
+//not sure containing current position(0,0)
 std::array<std::tuple<int, int, char>, 8> dirs =
 {
 	std::make_tuple(-1, -1, 'UL'), std::make_tuple(0, -1, 'UM'), std::make_tuple(1, -1, 'UR'),
-	std::make_tuple(-1, 0, 'ML'),								std::make_tuple(1, 0, 'MR'),
-	std::make_tuple(-1, 1, 'BL'),std::make_tuple(0, 1, 'BM'),std::make_tuple(1, 1, 'BR')
+	std::make_tuple(-1, 0, 'ML'),/*std::make_tuple(0, 0, 'MM'),*/std::make_tuple(1, 0, 'MR'),
+	std::make_tuple(-1, 1, 'BL'), std::make_tuple(0, 1, 'BM'), std::make_tuple(1, 1, 'BR')
 };
 
-//not sure containing current position(0,0)
-//std::array<std::tuple<int, int, char>, 9> dirs =
-//{
-//	std::make_tuple(-1, -1, 'UL'), std::make_tuple(0, -1, 'UM'), std::make_tuple(1, -1, 'UR'),
-//	std::make_tuple(-1, 0, 'ML'),std::make_tuple(0, 0, 'MM'), std::make_tuple(1, 0, 'MR'),
-//	std::make_tuple(-1, 1, 'BL'),std::make_tuple(0, 1, 'BM'),std::make_tuple(1, 1, 'BR')
-//};
 
 BWAPI::Position Next()
 {
@@ -583,7 +577,7 @@ BWAPI::Position Next()
 
 /*
  *todo : to attack safely,
- * 1. find more safety place along the forwarding direction to target
+ * 1. find more safety place along the forward direction to target
  * 2. until the target is in attack radius
  * 3. once it got into the range
  * 4. try to hit and run
@@ -598,17 +592,65 @@ BWAPI::Position Next()
  * 3. set flag depen on diffrence between x and y coordinates
  * 4. 
  */
-BWAPI::Position FindMostSafetyZone(std::vector<char> &inf_map, BWAPI::Position pos, Order order = Orders::AttackMove, bool ground = false)
+
+BWAPI::Position FindMostSafetyZone_Attack(std::vector<short> &inf_map, BWAPI::Position& pos, BWAPI::Position& dir, bool ground = false)
 {
 	std::vector<TilePosition> candidates;
 
-	TilePosition targetPosition(pos);
+	std::vector<bool> neighbor(8, false);
+
+	/*
+	*  忙式式成式式忖     忙式成式成式忖
+	*  弛 0弛 1弛     弛0弛1弛2弛
+	*  弛  弛  弛	   戍式托式托式扣
+	*  戍式式托式式扣	-> 弛3弛 弛4弛
+	*  弛 3弛 2弛	   戍式托式托式扣
+	*  弛  弛  弛	   戍5弛6弛7弛
+	*  戌式式扛式式戎	   戌式扛式扛式戎
+	*
+	*
+	* case 0 : x < 0 && y < 0
+	* -> include 0,1,3
+	*
+	* case 1 : x > 0 && y < 0
+	* -> include 1,2,4
+	*
+	* case 2 : x > 0 && y > 0
+	* -> include 4,6,7
+	*
+	* case 3 : x < 0 && y > 0
+	* -> include 3,5,6
+	*/
+
+	// I don't think pos will be equal to dir which means the unit and target at the same position
+	// but just in case...
+	if (dir.x <= 0 && dir.y <= 0)
+	{
+		neighbor[0] = neighbor[1] = neighbor[3] = true;
+	}
+	if (dir.x >= 0 && dir.y <= 0)
+	{
+		neighbor[1] = neighbor[2] = neighbor[4] = true;
+	}
+	if (dir.x >= 0 && dir.y >= 0)
+	{
+		neighbor[4] = neighbor[6] = neighbor[7] = true;
+	}
+	if (dir.x <= 0 && dir.y >= 0)
+	{
+		neighbor[3] = neighbor[5] = neighbor[6] = true;
+	}
 
 	int lowest = std::numeric_limits<int>::max();
 	for (int i = 0; i < 8; ++i)
 	{
+		if (!neighbor[i])
+			continue;
+
 		int dx = std::get<0>(dirs[i]);
 		int dy = std::get<1>(dirs[i]);
+
+		TilePosition targetPosition{ (TilePosition)pos  };
 
 		targetPosition.x -= dx;
 		targetPosition.y -= dy;
@@ -616,15 +658,16 @@ BWAPI::Position FindMostSafetyZone(std::vector<char> &inf_map, BWAPI::Position p
 		if (targetPosition.isValid())
 		{
 			if (ground)
-				if (!Broodwar->isWalkable(WalkPosition(targetPosition)))
+				if (!Broodwar->isWalkable((WalkPosition)targetPosition))
 					continue;
 
-			int influence = inf_map[(targetPosition.y) * mapHeight + targetPosition.x];
+			int influence = inf_map[targetPosition.y * mapHeight + targetPosition.x];
 
 			if (influence < lowest)
 			{
 				std::vector<TilePosition>().swap(candidates);
 				candidates.push_back(targetPosition);
+				lowest = influence;
 			}
 			else if (lowest == influence)
 			{
@@ -635,14 +678,14 @@ BWAPI::Position FindMostSafetyZone(std::vector<char> &inf_map, BWAPI::Position p
 
 	if (candidates.size() > 1)
 	{
-		Position returnPosition(pos);
+		Position returnPosition{ pos };
 		int closest = std::numeric_limits<int>::max();
 
 
 		for (TilePosition candidate : candidates)
 		{
 			//not sure which function is better (getApproxDistance or getDistance)
-			Position target(candidate.x + 16, candidate.y + 16);
+			Position target(candidate.x * 32 + 16, candidate.y * 32 + 16);
 			int distance = pos.getApproxDistance(target);
 
 			if (distance < closest)
@@ -654,7 +697,80 @@ BWAPI::Position FindMostSafetyZone(std::vector<char> &inf_map, BWAPI::Position p
 		return returnPosition;
 	}
 	else
-		return Position(candidates.at(0).x + 16, candidates.at(0).y + 16);
+	{
+		if (candidates.empty())
+			Broodwar->leaveGame();
+
+		return Position{ candidates.at(0).x * 32 + 16, candidates.at(0).y * 32 + 16 };
+	}
+
+};
+
+
+
+BWAPI::Position FindMostSafetyZone_Flee(std::vector<short> &inf_map, BWAPI::Position& pos, bool ground = false)
+{
+	std::vector<TilePosition> candidates;
+
+
+	int lowest = std::numeric_limits<int>::max();
+	for (int i = 0; i < 8; ++i)
+	{
+		int dx = std::get<0>(dirs[i]);
+		int dy = std::get<1>(dirs[i]);
+
+		TilePosition targetPosition{ (TilePosition)pos };
+
+		targetPosition.x -= dx;
+		targetPosition.y -= dy;
+
+		if (targetPosition.isValid())
+		{
+			if (ground)
+				if (!Broodwar->isWalkable((WalkPosition) targetPosition))
+					continue;
+
+			int influence = inf_map[targetPosition.y * mapHeight + targetPosition.x];
+
+			if (influence < lowest)
+			{
+				std::vector<TilePosition>().swap(candidates);
+				candidates.push_back(targetPosition);
+				lowest = influence;
+			}
+			else if (lowest == influence)
+			{
+				candidates.push_back(targetPosition);
+			}
+		}
+	}
+
+	if (candidates.size() > 1)
+	{
+		Position returnPosition{ pos };
+		int closest = std::numeric_limits<int>::max();
+
+		for (TilePosition candidate : candidates)
+		{
+			//not sure which function is better (getApproxDistance or getDistance)
+			Position target{ candidate.x * 32 + 16, candidate.y * 32 + 16 };
+			int distance = pos.getApproxDistance(target);
+
+			if (distance < closest)
+			{
+				closest = distance;
+				returnPosition = target;
+			}
+		}
+		return returnPosition;
+	}
+	else
+	{
+		if (candidates.empty())
+			Broodwar->leaveGame();
+
+		return Position{ candidates.at(0).x * 32 + 16, candidates.at(0).y * 32 + 16 };
+	}
 
 };
 
@@ -709,6 +825,7 @@ bool build(UnitCommand & mt)
 					&& supply >= requireSupply)
 				{
 					//if ((*MyUnitSets[BWAPI::UnitTypes::Enum::Zerg_Larva].m_units.begin())->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType())))
+					if(!UnitDataSets[Broodwar->self()][UnitTypes::Enum::Zerg_Larva].m_units.empty())
 					if ((*UnitDataSets[Broodwar->self()][UnitTypes::Enum::Zerg_Larva].m_units.begin())->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType())))
 					{
 						/*reservedMineral -= requireMin;
@@ -735,6 +852,9 @@ bool build(UnitCommand & mt)
 		else if (UnitTypes::Enum::Zerg_Hatchery <= mt.getUnitType()
 			&& mt.getUnitType() <= UnitTypes::Enum::Zerg_Extractor) // it's building
 		{
+			if (UnitDataSets[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].m_units.empty())
+				return false;
+
 			int minerals = BWAPI::Broodwar->self()->minerals();
 			int requireMin = buildorder.front().getUnitType().mineralPrice();//mt.unitType.mineralPrice();
 
@@ -920,6 +1040,7 @@ bool build(UnitCommand & mt)
 				// to do : select desired one
 				if (mt.getUnitType() == BWAPI::UnitTypes::Enum::Zerg_Lair)
 				{
+					bool result = false;
 					for (Unit hatchery : UnitDataSets[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Hatchery].m_units)
 						//auto & hatchery = *MyUnitSets[BWAPI::UnitTypes::Enum::Zerg_Hatchery].m_units.begin();
 					{
@@ -927,18 +1048,18 @@ bool build(UnitCommand & mt)
 							//if(hatchery->getTilePosition() == Broodwar->self()->getStartLocation())
 							if (!hatchery->isMorphing())
 							{
-								bool result = hatchery->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType()));
+								result = hatchery->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType()));
 
 								if (result)
 								{
 									UnitDataSets[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Hatchery].m_units.erase(hatchery);
 									/*reservedMineral -= requireMin;
 									reservedGas -= requireGas;*/
+									return true;
 								}
-								return result;
 							}
-						return false;
 					}
+					return result;
 				}
 				else if (mt.getUnitType() == BWAPI::UnitTypes::Enum::Zerg_Hive)
 				{
@@ -963,6 +1084,9 @@ bool build(UnitCommand & mt)
 				else
 				{
 					//for (auto & worker : MyUnitSets[BWAPI::UnitTypes::Zerg_Drone].m_units)
+					if(UnitDataSets[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].m_units.empty())
+						return false;
+
 					BWAPI::Unit supplyBuilder = *UnitDataSets[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].m_units.begin();
 					{
 						// Retrieve a unit that is capable of constructing the supply needed
@@ -1276,6 +1400,15 @@ void HoldAIModule::onStart()
 		Broodwar->setCommandOptimizationLevel(1);
 		Broodwar->setLocalSpeed(0);
 		Broodwar->setFrameSkip(16);
+#ifndef _DEBUG
+#else
+		Broodwar->sendText("show me the money");
+		Broodwar->sendText("show me the money");
+		Broodwar->sendText("show me the money");
+		Broodwar->sendText("show me the money");
+		Broodwar->sendText("operation cwal");
+		Broodwar->sendText("food for thought");
+#endif
 		/*Broodwar->sendText("operatioan cwal");
 		Broodwar->sendText("show me the money");*/
 		/*Broodwar->sendText("power overwhelming");
@@ -1316,7 +1449,7 @@ void HoldAIModule::onStart()
 
 
 
-
+#ifndef _DEBUG
 		unitType.extra = UnitTypes::Enum::Zerg_Drone;
 		buildorder.push_back(unitType);
 		buildorder.push_back(unitType);
@@ -1443,6 +1576,87 @@ void HoldAIModule::onStart()
 		buildorder.push_back(unitType);
 		buildorder.push_back(unitType);
 		buildorder.push_back(unitType);
+#else
+		unitType.extra = UnitTypes::Enum::Zerg_Hatchery;
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+
+		
+		unitType.extra = UnitTypes::Enum::Zerg_Drone;
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		unitType.extra = UnitTypes::Enum::Zerg_Spawning_Pool;
+		buildorder.push_back(unitType);
+		unitType.extra = UnitTypes::Enum::Zerg_Drone;
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+
+
+		unitType.extra = UnitTypes::Enum::Zerg_Lair;
+		buildorder.push_back(unitType);
+
+		unitType.extra = UnitTypes::Enum::Zerg_Overlord;
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+
+		
+
+		unitType.extra = UnitTypes::Enum::Zerg_Spire;
+		buildorder.push_back(unitType);
+
+		unitType.extra = UnitTypes::Enum::Zerg_Drone;
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+
+
+		unitType.extra = UnitTypes::Enum::Zerg_Mutalisk;
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+
+		unitType.extra = UnitTypes::Enum::Zerg_Hydralisk_Den;
+		buildorder.push_back(unitType);
+
+		/*MetaType techType;
+		techType.data_type = MetaType::TechType;
+		techType.upgradeType = TechTypes::Enum::Lurker_Aspect;
+		buildorder.push_back(techType);*/
+
+
+		unitType.type = UnitCommandTypes::Upgrade;
+		//upgradeType.upgradeType = UpgradeTypes::Enum::Muscular_Augments; // hydra speed
+		unitType.extra = UpgradeTypes::Enum::Grooved_Spines; // hydra range
+		buildorder.push_back(unitType);
+
+		unitType.type = UnitCommandTypes::Morph;
+		unitType.extra = UnitTypes::Enum::Zerg_Hydralisk;
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+
+		unitType.extra = UnitTypes::Enum::Zerg_Overlord;
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+
+		unitType.extra = UnitTypes::Enum::Zerg_Hydralisk;
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);
+#endif
 
 
 		for (auto & u : Broodwar->self()->getUnits())
@@ -1596,18 +1810,18 @@ void HoldAIModule::onEnd(bool isWinner)
 		}
 		//UnitDataSets[Broodwar->self()].clear();
 
-		std::vector<char>().swap(myinfluenceGround);
-		std::vector<char>().swap(myinfluenceAir);
-		std::vector<char>().swap(opinfluenceGround);
-		std::vector<char>().swap(opinfluenceAir);
-		std::vector<char>().swap(influenceGround);
-		std::vector<char>().swap(influenceAir);
-		std::vector<char>().swap(tensionGround);
-		std::vector<char>().swap(tensionAir);
-		std::vector<char>().swap(tensionTotal);
-		std::vector<char>().swap(vulGround);
-		std::vector<char>().swap(vulAir);
-		std::vector<char>().swap(vulTotal);
+		std::vector<short>().swap(myinfluenceGround);
+		std::vector<short>().swap(myinfluenceAir);
+		std::vector<short>().swap(opinfluenceGround);
+		std::vector<short>().swap(opinfluenceAir);
+		std::vector<short>().swap(influenceGround);
+		std::vector<short>().swap(influenceAir);
+		std::vector<short>().swap(tensionGround);
+		std::vector<short>().swap(tensionAir);
+		std::vector<short>().swap(tensionTotal);
+		std::vector<short>().swap(vulGround);
+		std::vector<short>().swap(vulAir);
+		std::vector<short>().swap(vulTotal);
 	}
 }
 
@@ -1775,11 +1989,12 @@ void HoldAIModule::onFrame()
 
 		for (auto u : Broodwar->self()->getUnits())
 		{
-
+#ifndef _DEBUG
 			if (!u->getType().isBuilding()
 				&& u->getType() != UnitTypes::Enum::Zerg_Larva
 				&& u->getType() != UnitTypes::Enum::Zerg_Egg)
 				HOLD::DrawDirection(u, 50.0);
+#endif
 
 
 
@@ -1793,7 +2008,22 @@ void HoldAIModule::onFrame()
 
 			Broodwar->drawTextMap(u->getPosition(),
 				"%c#%d %s\n %.2f\n%c%d, %d\n%d", u->isAccelerating() ? Text::Grey : Text::Red, u->getID(), u->getOrder().c_str(), abs(u->getVelocityX()) + abs(u->getVelocityY()), Text::BrightRed, u->getOrderTargetPosition().x, u->getOrderTargetPosition().y, u->getType().sightRange());// , Text::BrightRed, i->getGroundWeaponCooldown());
+			
+			if (u->getTarget() != nullptr)
+			{
+				if (u->getTargetPosition() != Positions::Invalid
+					&& u->getTargetPosition() != Positions::None
+					&& u->getTargetPosition() != Positions::Unknown
+					&& u->getTargetPosition() != Positions::Origin) Broodwar->drawLineMap(u->getPosition(), u->getTargetPosition(), Colors::Orange);
+			}
 
+			else if (u->getOrderTarget() != nullptr)
+			{
+				if (u->getOrderTargetPosition() != Positions::Invalid
+					&& u->getOrderTargetPosition() != Positions::None
+					&& u->getOrderTargetPosition() != Positions::Unknown
+					&& u->getOrderTargetPosition() != Positions::Origin) Broodwar->drawLineMap(u->getPosition(), u->getOrderTargetPosition(), Colors::Orange);
+			}
 
 																																																																							 //"%c#%d %s\n %.2f::%.2f", Text::Grey, i->getID(), i->getOrder().c_str(), i->getVelocityX(), i->getVelocityY());// , Text::BrightRed, i->getGroundWeaponCooldown());
 
@@ -1964,15 +2194,15 @@ void HoldAIModule::onFrame()
 			int airEndY = ceil((unitPositionY + airRadius) / 32.f - airOffset);
 
 			//need to clamp
-			Math::Clamp(std::max(0, groundStartX), 0, mapWidth);
-			Math::Clamp(std::max(0, groundStartY), 0, mapHeight);
-			Math::Clamp(groundEndX, 0, mapWidth);
-			Math::Clamp(groundEndY, 0, mapHeight);
+			groundStartX = Math::Clamp(groundStartX, 0, mapWidth - 1);
+			groundStartY = Math::Clamp(groundStartY, 0, mapHeight - 1);
+			groundEndX = Math::Clamp(groundEndX, 0, mapWidth - 1);
+			groundEndY = Math::Clamp(groundEndY, 0, mapHeight - 1);
 
-			Math::Clamp(std::max(0, airStartX), 0, mapWidth);
-			Math::Clamp(std::max(0, airStartY), 0, mapHeight);
-			Math::Clamp(airEndX, 0, mapWidth);
-			Math::Clamp(airEndY, 0, mapHeight);
+			airStartX = Math::Clamp(airStartX, 0, mapWidth - 1);
+			airStartY = Math::Clamp(airStartY, 0, mapHeight - 1);
+			airEndX = Math::Clamp(airEndX, 0, mapWidth - 1);
+			airEndY = Math::Clamp(airEndY, 0, mapHeight - 1);
 
 			if (groundWeapon.damageAmount())
 			{
@@ -2094,22 +2324,22 @@ void HoldAIModule::onFrame()
 				int airStartX = floor((unitPositionX - airRadius) / 32.f + airOffset);
 				int airStartY = floor((unitPositionY - airRadius) / 32.f + airOffset);
 
-				int groundEndX = static_cast<int>(ceil((unitPositionX + groundRadius) / 32.f - groundOffset));
-				int groundEndY = static_cast<int>(ceil((unitPositionY + groundRadius) / 32.f - groundOffset));
+				int groundEndX = ceil((unitPositionX + groundRadius) / 32.f - groundOffset);
+				int groundEndY = ceil((unitPositionY + groundRadius) / 32.f - groundOffset);
 
-				int airEndX = static_cast<int>(ceil((unitPositionX + airRadius) / 32.f - airOffset));
-				int airEndY = static_cast<int>(ceil((unitPositionY + airRadius) / 32.f - airOffset));
+				int airEndX = ceil((unitPositionX + airRadius) / 32.f - airOffset);
+				int airEndY = ceil((unitPositionY + airRadius) / 32.f - airOffset);
 
 				//need to clamp
-				Math::Clamp(std::max(0, groundStartX), 0, mapWidth);
-				Math::Clamp(std::max(0, groundStartY), 0, mapHeight);
-				Math::Clamp(groundEndX, 0, mapWidth);
-				Math::Clamp(groundEndY, 0, mapHeight);
+				groundStartX = Math::Clamp(groundStartX, 0, mapWidth - 1);
+				groundStartY = Math::Clamp(groundStartY, 0, mapHeight - 1);
+				groundEndX = Math::Clamp(groundEndX, 0, mapWidth - 1);
+				groundEndY = Math::Clamp(groundEndY, 0, mapHeight - 1);
 
-				Math::Clamp(std::max(0, airStartX), 0, mapWidth);
-				Math::Clamp(std::max(0, airStartY), 0, mapHeight);
-				Math::Clamp(airEndX, 0, mapWidth);
-				Math::Clamp(airEndY, 0, mapHeight);
+				airStartX = Math::Clamp(airStartX, 0, mapWidth - 1);
+				airStartY = Math::Clamp(airStartY, 0, mapHeight - 1);
+				airEndX = Math::Clamp(airEndX, 0, mapWidth - 1);
+				airEndY = Math::Clamp(airEndY, 0, mapHeight - 1);
 
 				if (groundWeapon.damageAmount())
 				{
@@ -2477,29 +2707,36 @@ void HoldAIModule::onFrame()
 			if (closestTarget)
 				if (closestTarget->getType() != UnitTypes::Unknown)
 				{
-					BWAPI::Position fleeVec(u->getPosition() - closestTarget->getPosition());
-					double fleeAngle = atan2(fleeVec.y, fleeVec.x);
-					fleeVec = BWAPI::Position(static_cast<int>(64.0 * cos(fleeAngle)), static_cast<int>(64.0 * sin(fleeAngle)));
-					Broodwar->drawLineMap(u->getPosition(), u->getPosition() + fleeVec, Colors::Red);
-					Broodwar->drawCircleMap(closestTarget->getPosition(), 5, Colors::Red, true);
-
-					Position forwardVec(closestTarget->getPosition() - u->getPosition());
-					Broodwar->drawLineMap(u->getPosition(), u->getPosition(), Colors::Blue);
-
-
-					float cooldown = static_cast<float>(u->getGroundWeaponCooldown()) / static_cast<float>(u->getType().groundWeapon().damageCooldown());
-
-					if (cooldown > 0.2f)
+					Position targetpos = closestTarget->getPosition();
+					if (targetpos != Positions::Invalid
+						&& targetpos != Positions::None
+						&& targetpos != Positions::Unknown
+						&& targetpos != Positions::Origin)
 					{
-						u->issueCommand(UnitCommand::move(u, FindMostSafetyZone(vulTotal, u->getPosition(), u->getOrder(), u->getType().isFlyer())));
-						//u->issueCommand(UnitCommand::move(u, u->getPosition() + fleeVec));
-					}
-					else
-					{
-						u->issueCommand(UnitCommand::move(u, u->getPosition() + fleeVec));
-						//todo : How can I handle simple moving case?
-						//u->issueCommand(UnitCommand::move(u, FindMostSafetyZone(vulTotal, u->getPosition(), u->getOrder(), u->getType().isFlyer())));
-						u->issueCommand(UnitCommand::rightClick(u, closestTarget));
+						BWAPI::Position fleeVec(u->getPosition() - targetpos);
+						double fleeAngle = atan2(fleeVec.y, fleeVec.x);
+						fleeVec = BWAPI::Position(static_cast<int>(64.0 * cos(fleeAngle)), static_cast<int>(64.0 * sin(fleeAngle)));
+						Broodwar->drawLineMap(u->getPosition(), u->getPosition() + fleeVec, Colors::Red);
+						Broodwar->drawCircleMap(targetpos, 5, Colors::Red, true);
+
+						Position forwardVec(fleeVec * -1);//targetpos - u->getPosition());
+						Broodwar->drawLineMap(u->getPosition(), targetpos, Colors::Blue);
+
+
+						float cooldown = static_cast<float>(u->getGroundWeaponCooldown()) / static_cast<float>(u->getType().groundWeapon().damageCooldown());
+
+						if (cooldown > 0.2f)
+						{
+							u->issueCommand(UnitCommand::move(nullptr, FindMostSafetyZone_Flee(u->getType().isFlyer()? opinfluenceAir : opinfluenceGround, u->getPosition(), u->getType().isFlyer())));
+							//u->issueCommand(UnitCommand::move(u, u->getPosition() + fleeVec));
+						}
+						else
+						{
+							//u->issueCommand(UnitCommand::move(u, u->getPosition() + fleeVec));
+							//todo : How can I handle simple moving case?
+							u->issueCommand(UnitCommand::move(nullptr, FindMostSafetyZone_Attack(u->getType().isFlyer() ? vulAir : vulGround, u->getPosition(), forwardVec, u->getType().isFlyer())));
+							u->issueCommand(UnitCommand::rightClick(u, closestTarget));
+						}
 					}
 				}
 		} // closure: unit iterator
@@ -2647,22 +2884,22 @@ void HoldAIModule::onFrame()
 
 		//influence
 		std::transform(myinfluenceGround.begin(), myinfluenceGround.end(), opinfluenceGround.begin(),
-			influenceGround.begin(), std::minus<char>());
+			influenceGround.begin(), std::minus<short>());
 
 		std::transform(myinfluenceAir.begin(), myinfluenceAir.end(), opinfluenceAir.begin(),
-			influenceAir.begin(), std::minus<char>());
+			influenceAir.begin(), std::minus<short>());
 
 
 		//tension
 		std::transform(myinfluenceGround.begin(), myinfluenceGround.end(), opinfluenceGround.begin(),
-			tensionGround.begin(), std::plus<char>());
+			tensionGround.begin(), std::plus<short>());
 
 		std::transform(myinfluenceAir.begin(), myinfluenceAir.end(), opinfluenceAir.begin(),
-			tensionAir.begin(), std::plus<char>());
+			tensionAir.begin(), std::plus<short>());
 
 
 		std::transform(tensionGround.begin(), tensionGround.end(), tensionAir.begin(),
-			tensionTotal.begin(), std::plus<char>());
+			tensionTotal.begin(), std::plus<short>());
 
 		//Vulnerability  
 		//Calculated as Tension map -Abs(Influence map)
@@ -2681,7 +2918,7 @@ void HoldAIModule::onFrame()
 		});
 
 		std::transform(vulGround.begin(), vulGround.end(), vulAir.begin(),
-			vulTotal.begin(), std::plus<char>());
+			vulTotal.begin(), std::plus<short>());
 
 
 
@@ -3362,7 +3599,7 @@ void HoldAIModule::onUnitMorph(BWAPI::Unit unit)
 			//	|| unitType != UnitTypes::Zerg_Cocoon
 			//	|| unitType != UnitTypes::Zerg_Lurker_Egg)
 			//{
-			//	//todo: when the cancle lurker_egg -> this function call for the hydra
+			//	//todo: when the cancle lurker_egg -> this function will be called for the hydra
 			//	reservedMineral -= unit->getType().mineralPrice();
 			//	reservedGas -= unit->getType().gasPrice();
 			//}
