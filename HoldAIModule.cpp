@@ -25,6 +25,13 @@ static int reservedMineral = 50;
 static int reservedGas = 0;
 static int reservedSupply = 2;
 
+static bool foundEnemyBase = false;
+
+
+static bool drawRange = false;
+static bool drawBoundaries = false;
+static bool drawDirection = false;
+static bool drawGridMap = false;
 
 // create array
 /*
@@ -39,7 +46,7 @@ Calculated as My Influence+OpponentInfluence
 Vulnerability Map
 Calculated as Tension map -Abs(Influence map)
 */
-std::vector<short> myinfluenceGround;// (dim1, std::vector<double>(dim2));
+std::vector<short> myinfluenceGround;
 std::vector<short> myinfluenceAir;
 std::vector<short> opinfluenceGround;
 std::vector<short> opinfluenceAir;
@@ -311,7 +318,7 @@ namespace HOLD
 	//			
 	//		}
 
-	void drawGrid(UnitType ut, Position pos, Color color = Colors::Red)
+	void drawBoundary(UnitType ut, Position pos, Color color = Colors::Red)
 	{
 
 		/*auto DRAWUNITBOX = [](auto &leftTop, auto & rightBottom, auto & color)
@@ -323,7 +330,7 @@ namespace HOLD
 		Broodwar->drawBoxMap(pos.x - ut.dimensionLeft(), pos.y - ut.dimensionUp(), pos.x + ut.dimensionRight(), pos.y + ut.dimensionDown(), color);
 	}
 
-	void drawGrid(Unit u, Color color = Colors::White)
+	void drawBoundary(Unit u, Color color = Colors::White)
 	{
 		UnitType ut = u->getType();
 		int x = u->getPosition().x;
@@ -622,7 +629,7 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<short> &inf_map, BWAPI::Po
 	* -> include 3,5,6
 	*/
 
-	// I don't think pos will be equal to dir which means the unit and target at the same position
+	// I don't think pos will be equal to dir. Which means the unit and target at the same position
 	// but just in case...
 	if (dir.x <= 0 && dir.y <= 0)
 	{
@@ -650,16 +657,16 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<short> &inf_map, BWAPI::Po
 		int dx = std::get<0>(dirs[i]);
 		int dy = std::get<1>(dirs[i]);
 
-		TilePosition targetPosition{ (TilePosition)pos  };
+		TilePosition targetPosition{ pos.x / 32, pos.y / 32  };
 
-		targetPosition.x -= dx;
-		targetPosition.y -= dy;
+		targetPosition.x += dx;
+		targetPosition.y += dy;
 
 		if (targetPosition.isValid())
 		{
-			if (ground)
-				if (!Broodwar->isWalkable((WalkPosition)targetPosition))
-					continue;
+			/*if (ground)
+				if (!Broodwar->isWalkable(WalkPosition{ targetPosition.x * 4, targetPosition.y * 4 }))
+					continue;*/
 
 			int influence = inf_map[targetPosition.y * mapHeight + targetPosition.x];
 
@@ -676,7 +683,7 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<short> &inf_map, BWAPI::Po
 		}
 	}
 
-	if (candidates.size() > 1)
+	if (candidates.size())
 	{
 		Position returnPosition{ pos };
 		int closest = std::numeric_limits<int>::max();
@@ -685,7 +692,7 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<short> &inf_map, BWAPI::Po
 		for (TilePosition candidate : candidates)
 		{
 			//not sure which function is better (getApproxDistance or getDistance)
-			Position target(candidate.x * 32 + 16, candidate.y * 32 + 16);
+			Position target(candidate.x * 32+ pos.x % 32, candidate.y * 32 + pos.y % 32);
 			int distance = pos.getApproxDistance(target);
 
 			if (distance < closest)
@@ -699,9 +706,10 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<short> &inf_map, BWAPI::Po
 	else
 	{
 		if (candidates.empty())
-			Broodwar->leaveGame();
+			return pos;
+			//Broodwar->leaveGame();
 
-		return Position{ candidates.at(0).x * 32 + 16, candidates.at(0).y * 32 + 16 };
+		//return Position{ candidates.at(0).x * 32 + pos.x % 32, candidates.at(0).y * 32 + pos.y % 32 };
 	}
 
 };
@@ -719,16 +727,18 @@ BWAPI::Position FindMostSafetyZone_Flee(std::vector<short> &inf_map, BWAPI::Posi
 		int dx = std::get<0>(dirs[i]);
 		int dy = std::get<1>(dirs[i]);
 
-		TilePosition targetPosition{ (TilePosition)pos };
+		//TilePosition targetPosition{ (TilePosition)pos };
+		TilePosition targetPosition{ pos.x / 32, pos.y / 32 };
+		
 
-		targetPosition.x -= dx;
-		targetPosition.y -= dy;
+		targetPosition.x += dx;
+		targetPosition.y += dy;
 
 		if (targetPosition.isValid())
 		{
-			if (ground)
-				if (!Broodwar->isWalkable((WalkPosition) targetPosition))
-					continue;
+			/*if (ground)
+				if (!Broodwar->isWalkable(WalkPosition{ targetPosition.x * 4, targetPosition.y * 4 }))
+					continue;*/
 
 			int influence = inf_map[targetPosition.y * mapHeight + targetPosition.x];
 
@@ -745,7 +755,7 @@ BWAPI::Position FindMostSafetyZone_Flee(std::vector<short> &inf_map, BWAPI::Posi
 		}
 	}
 
-	if (candidates.size() > 1)
+	if (candidates.size())
 	{
 		Position returnPosition{ pos };
 		int closest = std::numeric_limits<int>::max();
@@ -753,7 +763,7 @@ BWAPI::Position FindMostSafetyZone_Flee(std::vector<short> &inf_map, BWAPI::Posi
 		for (TilePosition candidate : candidates)
 		{
 			//not sure which function is better (getApproxDistance or getDistance)
-			Position target{ candidate.x * 32 + 16, candidate.y * 32 + 16 };
+			Position target{ candidate.x * 32 + pos.x % 32, candidate.y * 32 + pos.y % 32};
 			int distance = pos.getApproxDistance(target);
 
 			if (distance < closest)
@@ -762,14 +772,22 @@ BWAPI::Position FindMostSafetyZone_Flee(std::vector<short> &inf_map, BWAPI::Posi
 				returnPosition = target;
 			}
 		}
+		
+		BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
+		{
+			BWAPI::Broodwar->drawLineMap(pos, returnPosition, BWAPI::Colors::White);
+		},
+			[=](BWAPI::Game*) {return true; },  // condition
+			25);  // frames to run
 		return returnPosition;
 	}
 	else
 	{
 		if (candidates.empty())
-			Broodwar->leaveGame();
+			return pos;
+		//Broodwar->leaveGame();
 
-		return Position{ candidates.at(0).x * 32 + 16, candidates.at(0).y * 32 + 16 };
+		//return Position{ candidates.at(0).x * 32, candidates.at(0).y * 32 };
 	}
 
 };
@@ -797,6 +815,7 @@ std::unordered_map< BWAPI::Player, std::unordered_map< int, HOLD::UnitDataSet > 
 static int currentorder = 0;
 
 std::vector<TilePosition> enemyBaseCandidate;
+std::vector<TilePosition> enemyBase;
 
 bool build(UnitCommand & mt)
 {
@@ -1400,6 +1419,7 @@ void HoldAIModule::onStart()
 		Broodwar->setCommandOptimizationLevel(1);
 		Broodwar->setLocalSpeed(0);
 		Broodwar->setFrameSkip(16);
+
 #ifndef _DEBUG
 #else
 		Broodwar->sendText("show me the money");
@@ -1577,85 +1597,85 @@ void HoldAIModule::onStart()
 		buildorder.push_back(unitType);
 		buildorder.push_back(unitType);
 #else
-		unitType.extra = UnitTypes::Enum::Zerg_Hatchery;
+		/*unitType.extra = UnitTypes::Enum::Zerg_Hatchery;
 		buildorder.push_back(unitType);
 		buildorder.push_back(unitType);
 		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
+		buildorder.push_back(unitType);*/
 
-		
-		unitType.extra = UnitTypes::Enum::Zerg_Drone;
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		unitType.extra = UnitTypes::Enum::Zerg_Spawning_Pool;
-		buildorder.push_back(unitType);
-		unitType.extra = UnitTypes::Enum::Zerg_Drone;
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
+		//
+		//unitType.extra = UnitTypes::Enum::Zerg_Drone;
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//unitType.extra = UnitTypes::Enum::Zerg_Spawning_Pool;
+		//buildorder.push_back(unitType);
+		//unitType.extra = UnitTypes::Enum::Zerg_Drone;
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
 
 
 		unitType.extra = UnitTypes::Enum::Zerg_Lair;
 		buildorder.push_back(unitType);
 
-		unitType.extra = UnitTypes::Enum::Zerg_Overlord;
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
+		//unitType.extra = UnitTypes::Enum::Zerg_Overlord;
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
 
-		
+		//
 
-		unitType.extra = UnitTypes::Enum::Zerg_Spire;
-		buildorder.push_back(unitType);
+		//unitType.extra = UnitTypes::Enum::Zerg_Spire;
+		//buildorder.push_back(unitType);
 
-		unitType.extra = UnitTypes::Enum::Zerg_Drone;
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-
-
-		unitType.extra = UnitTypes::Enum::Zerg_Mutalisk;
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-
-		unitType.extra = UnitTypes::Enum::Zerg_Hydralisk_Den;
-		buildorder.push_back(unitType);
-
-		/*MetaType techType;
-		techType.data_type = MetaType::TechType;
-		techType.upgradeType = TechTypes::Enum::Lurker_Aspect;
-		buildorder.push_back(techType);*/
+		//unitType.extra = UnitTypes::Enum::Zerg_Drone;
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
 
 
-		unitType.type = UnitCommandTypes::Upgrade;
-		//upgradeType.upgradeType = UpgradeTypes::Enum::Muscular_Augments; // hydra speed
-		unitType.extra = UpgradeTypes::Enum::Grooved_Spines; // hydra range
-		buildorder.push_back(unitType);
+		//unitType.extra = UnitTypes::Enum::Zerg_Mutalisk;
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
 
-		unitType.type = UnitCommandTypes::Morph;
-		unitType.extra = UnitTypes::Enum::Zerg_Hydralisk;
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
+		//unitType.extra = UnitTypes::Enum::Zerg_Hydralisk_Den;
+		//buildorder.push_back(unitType);
 
-		unitType.extra = UnitTypes::Enum::Zerg_Overlord;
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
+		///*MetaType techType;
+		//techType.data_type = MetaType::TechType;
+		//techType.upgradeType = TechTypes::Enum::Lurker_Aspect;
+		//buildorder.push_back(techType);*/
 
-		unitType.extra = UnitTypes::Enum::Zerg_Hydralisk;
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
-		buildorder.push_back(unitType);
+
+		//unitType.type = UnitCommandTypes::Upgrade;
+		////upgradeType.upgradeType = UpgradeTypes::Enum::Muscular_Augments; // hydra speed
+		//unitType.extra = UpgradeTypes::Enum::Grooved_Spines; // hydra range
+		//buildorder.push_back(unitType);
+
+		//unitType.type = UnitCommandTypes::Morph;
+		//unitType.extra = UnitTypes::Enum::Zerg_Hydralisk;
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+
+		//unitType.extra = UnitTypes::Enum::Zerg_Overlord;
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+
+		//unitType.extra = UnitTypes::Enum::Zerg_Hydralisk;
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
+		//buildorder.push_back(unitType);
 #endif
 
 
@@ -1989,12 +2009,11 @@ void HoldAIModule::onFrame()
 
 		for (auto u : Broodwar->self()->getUnits())
 		{
-#ifndef _DEBUG
+			if(drawDirection)
 			if (!u->getType().isBuilding()
 				&& u->getType() != UnitTypes::Enum::Zerg_Larva
 				&& u->getType() != UnitTypes::Enum::Zerg_Egg)
 				HOLD::DrawDirection(u, 50.0);
-#endif
 
 
 
@@ -2004,31 +2023,31 @@ void HoldAIModule::onFrame()
 			// Register an event that draws the ID
 			/*Broodwar->registerEvent([=](Game*)
 			{*/
-#ifndef _DEBUG
-
-			Broodwar->drawTextMap(u->getPosition(),
-				"%c#%d %s\n %.2f\n%c%d, %d\n%d", u->isAccelerating() ? Text::Grey : Text::Red, u->getID(), u->getOrder().c_str(), abs(u->getVelocityX()) + abs(u->getVelocityY()), Text::BrightRed, u->getOrderTargetPosition().x, u->getOrderTargetPosition().y, u->getType().sightRange());// , Text::BrightRed, i->getGroundWeaponCooldown());
-			
-			if (u->getTarget() != nullptr)
+			if (drawRange)
 			{
-				if (u->getTargetPosition() != Positions::Invalid
-					&& u->getTargetPosition() != Positions::None
-					&& u->getTargetPosition() != Positions::Unknown
-					&& u->getTargetPosition() != Positions::Origin) Broodwar->drawLineMap(u->getPosition(), u->getTargetPosition(), Colors::Orange);
+				Broodwar->drawTextMap(u->getPosition(),
+					"%c#%d %s\n %.2f\n%c%d, %d\n%d", u->isAccelerating() ? Text::Grey : Text::Red, u->getID(), u->getOrder().c_str(), abs(u->getVelocityX()) + abs(u->getVelocityY()), Text::BrightRed, u->getOrderTargetPosition().x, u->getOrderTargetPosition().y, u->getType().sightRange());// , Text::BrightRed, i->getGroundWeaponCooldown());
+
+				if (u->getTarget() != nullptr)
+				{
+					if (u->getTargetPosition() != Positions::Invalid
+						&& u->getTargetPosition() != Positions::None
+						&& u->getTargetPosition() != Positions::Unknown
+						&& u->getTargetPosition() != Positions::Origin) Broodwar->drawLineMap(u->getPosition(), u->getTargetPosition(), Colors::Orange);
+				}
+
+				else if (u->getOrderTarget() != nullptr)
+				{
+					if (u->getOrderTargetPosition() != Positions::Invalid
+						&& u->getOrderTargetPosition() != Positions::None
+						&& u->getOrderTargetPosition() != Positions::Unknown
+						&& u->getOrderTargetPosition() != Positions::Origin) Broodwar->drawLineMap(u->getPosition(), u->getOrderTargetPosition(), Colors::Orange);
+				}
+
+				//"%c#%d %s\n %.2f::%.2f", Text::Grey, i->getID(), i->getOrder().c_str(), i->getVelocityX(), i->getVelocityY());// , Text::BrightRed, i->getGroundWeaponCooldown());
+
+				HOLD::drawWeaponCooldown(u);
 			}
-
-			else if (u->getOrderTarget() != nullptr)
-			{
-				if (u->getOrderTargetPosition() != Positions::Invalid
-					&& u->getOrderTargetPosition() != Positions::None
-					&& u->getOrderTargetPosition() != Positions::Unknown
-					&& u->getOrderTargetPosition() != Positions::Origin) Broodwar->drawLineMap(u->getPosition(), u->getOrderTargetPosition(), Colors::Orange);
-			}
-
-																																																																							 //"%c#%d %s\n %.2f::%.2f", Text::Grey, i->getID(), i->getOrder().c_str(), i->getVelocityX(), i->getVelocityY());// , Text::BrightRed, i->getGroundWeaponCooldown());
-
-			HOLD::drawWeaponCooldown(u);
-#endif
 
 			/*int length = 0;
 			BWEM::CPPath cpPath = theMap.GetPath();
@@ -2140,113 +2159,260 @@ void HoldAIModule::onFrame()
 		  //		mutalAndOver.insert(*MyUnitSets[UnitTypes::Enum::Zerg_Overlord].m_units.begin());
 
 		  // draw direction vector
-#ifndef _DEBUG
-		for (auto enemy : Broodwar->enemies())
+		if (drawDirection)
 		{
-			for (auto u : enemy->getUnits())
+			for (auto enemy : Broodwar->enemies())
 			{
-				if (!u->getType().isBuilding()
-					&& u->getType() != UnitTypes::Enum::Zerg_Larva
-					&& u->getType() != UnitTypes::Enum::Zerg_Egg)
-					HOLD::DrawDirection(u, 50.0);
+				for (auto u : enemy->getUnits())
+				{
+					if (!u->getType().isBuilding()
+						&& u->getType() != UnitTypes::Enum::Zerg_Larva
+						&& u->getType() != UnitTypes::Enum::Zerg_Egg)
+						HOLD::DrawDirection(u, 50.0);
+				}
 			}
 		}
-#endif
 
 		auto & Opinfluence = [](Unit u)
 		{
-			int x, y;
-			x = u->getPosition().x / 32;
-			y = u->getPosition().y / 32;
-			WeaponType groundWeapon = u->getType().groundWeapon();
-			WeaponType airWeapon = u->getType().airWeapon();
-			float groundRadius = static_cast<float>(u->getPlayer()->weaponMaxRange(groundWeapon));
-			float airRadius = static_cast<float>(u->getPlayer()->weaponMaxRange(airWeapon));
-
-			// unit's center position
-			float unitPositionX = static_cast<float>((static_cast<float>(u->getLeft()) + static_cast<float>(u->getRight())) / 2.f);
-			float unitPositionY = static_cast<float>((static_cast<float>(u->getBottom()) + static_cast<float>(u->getTop())) / 2.f);
-
-
-			//todo : handle defense buildings
-			float groundOffset = -0.8;
-
-			if (groundRadius > 32)
-				groundOffset = -1.8;
-
-			//offset = 0.2;
-
-			int groundStartX = floor((unitPositionX - groundRadius) / 32.f + groundOffset);
-			int groundStartY = floor((unitPositionY - groundRadius) / 32.f + groundOffset);
-
-			float airOffset = -0.8;
-
-			if (airRadius > 32)
-				airOffset = -1.8;
-
-			int airStartX = floor((unitPositionX - airRadius) / 32.f + airOffset);
-			int airStartY = floor((unitPositionY - airRadius) / 32.f + airOffset);
-
-			int groundEndX = ceil((unitPositionX + groundRadius) / 32.f - groundOffset);
-			int groundEndY = ceil((unitPositionY + groundRadius) / 32.f - groundOffset);
-
-			int airEndX = ceil((unitPositionX + airRadius) / 32.f - airOffset);
-			int airEndY = ceil((unitPositionY + airRadius) / 32.f - airOffset);
-
-			//need to clamp
-			groundStartX = Math::Clamp(groundStartX, 0, mapWidth - 1);
-			groundStartY = Math::Clamp(groundStartY, 0, mapHeight - 1);
-			groundEndX = Math::Clamp(groundEndX, 0, mapWidth - 1);
-			groundEndY = Math::Clamp(groundEndY, 0, mapHeight - 1);
-
-			airStartX = Math::Clamp(airStartX, 0, mapWidth - 1);
-			airStartY = Math::Clamp(airStartY, 0, mapHeight - 1);
-			airEndX = Math::Clamp(airEndX, 0, mapWidth - 1);
-			airEndY = Math::Clamp(airEndY, 0, mapHeight - 1);
-
-			if (groundWeapon.damageAmount())
+			if(u->getType() == UnitTypes::Terran_Bunker)// && !u->getLoadedUnits().empty())
 			{
-				int level = u->getPlayer()->getUpgradeLevel(groundWeapon.upgradeType());
-				int damage = (groundWeapon.damageAmount() + level * groundWeapon.damageBonus());// *groundWeapon.damageFactor(); //
-																								//int damage = static_cast<int>(static_cast<double>((groundWeapon.damageAmount() + level * groundWeapon.damageBonus())) * (static_cast<double>(groundWeapon.damageCooldown() - u->getGroundWeaponCooldown()) / static_cast<double>(groundWeapon.damageCooldown())));
+				//can it be recursive? nvm it doens't work without complete map info
+				//for(Unit loadedUnit : u->getLoadedUnits())
+				{
+					int x, y;
+					x = u->getPosition().x / 32;
+					y = u->getPosition().y / 32;
+					WeaponType groundWeapon = BWAPI::WeaponTypes::Gauss_Rifle;
+					WeaponType airWeapon = BWAPI::WeaponTypes::Gauss_Rifle;
+					float groundRadius = static_cast<float>(u->getPlayer()->weaponMaxRange(groundWeapon)) + 1.f;
+					float airRadius = static_cast<float>(u->getPlayer()->weaponMaxRange(airWeapon)) + 1.f;
 
-				if (damage)
-					for (int Y = groundStartY; Y < groundEndY; ++Y)
-					{
-						for (int X = groundStartX; X < groundEndX; ++X)
-						{
-							// make influence fall of with distance:
-							float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
-							//dist = fmod(x, 32.f);
-							dist /= 32.f;
-							if (dist <= 1.f)
-								dist = 1.f;
+					// unit's center position
+					float unitPositionX = static_cast<float>((static_cast<float>(u->getLeft()) + static_cast<float>(u->getRight())) / 2.f);
+					float unitPositionY = static_cast<float>((static_cast<float>(u->getBottom()) + static_cast<float>(u->getTop())) / 2.f);
 
-							opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
-						}
-					}
+					int groundStartX = floor((unitPositionX - groundRadius) / 32.f);
+					int groundStartY = floor((unitPositionY - groundRadius) / 32.f);
+
+					int airStartX = floor((unitPositionX - airRadius) / 32.f);
+					int airStartY = floor((unitPositionY - airRadius) / 32.f);
+
+					int groundEndX = ceil((unitPositionX + groundRadius) / 32.f);
+					int groundEndY = ceil((unitPositionY + groundRadius) / 32.f);
+
+					int airEndX = ceil((unitPositionX + airRadius) / 32.f);
+					int airEndY = ceil((unitPositionY + airRadius) / 32.f);
+
+					//need to clamp
+					groundStartX = Math::Clamp(groundStartX, 0, mapWidth - 1);
+					groundStartY = Math::Clamp(groundStartY, 0, mapHeight - 1);
+					groundEndX = Math::Clamp(groundEndX, 0, mapWidth - 1);
+					groundEndY = Math::Clamp(groundEndY, 0, mapHeight - 1);
+
+					airStartX = Math::Clamp(airStartX, 0, mapWidth - 1);
+					airStartY = Math::Clamp(airStartY, 0, mapHeight - 1);
+					airEndX = Math::Clamp(airEndX, 0, mapWidth - 1);
+					airEndY = Math::Clamp(airEndY, 0, mapHeight - 1);
+
+					
+						int level = u->getPlayer()->getUpgradeLevel(groundWeapon.upgradeType());
+						int damage = (groundWeapon.damageAmount() + level * groundWeapon.damageBonus()) * 4;// *groundWeapon.damageFactor(); //
+																										//int damage = static_cast<int>(static_cast<double>((groundWeapon.damageAmount() + level * groundWeapon.damageBonus())) * (static_cast<double>(groundWeapon.damageCooldown() - u->getGroundWeaponCooldown()) / static_cast<double>(groundWeapon.damageCooldown())));
+
+							for (int Y = groundStartY; Y < groundEndY; ++Y)
+							{
+								for (int X = groundStartX; X < groundEndX; ++X)
+								{
+									// make influence fall of with distance:
+									float dist = Math::Distance(Vector2(x * 32 + 16/*this also can be pos % 32?*/, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+									//dist = fmod(x, 32.f);
+									dist /= 32.f;
+									if (dist <= 1.f)
+										dist = 1.f;
+
+									opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+									opinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+
+								}
+							}
+					
+					//int x, y;
+					//x = loadedUnit->getPosition().x / 32;
+					//y = loadedUnit->getPosition().y / 32;
+					//WeaponType groundWeapon = loadedUnit->getType().groundWeapon();
+					//WeaponType airWeapon = loadedUnit->getType().airWeapon();
+					//float groundRadius = static_cast<float>(loadedUnit->getPlayer()->weaponMaxRange(groundWeapon)) + 1.f;
+					//float airRadius = static_cast<float>(loadedUnit->getPlayer()->weaponMaxRange(airWeapon)) + 1.f;
+
+					//// unit's center position
+					//float unitPositionX = static_cast<float>((static_cast<float>(loadedUnit->getLeft()) + static_cast<float>(loadedUnit->getRight())) / 2.f);
+					//float unitPositionY = static_cast<float>((static_cast<float>(loadedUnit->getBottom()) + static_cast<float>(loadedUnit->getTop())) / 2.f);
+
+					//int groundStartX = floor((unitPositionX - groundRadius) / 32.f);
+					//int groundStartY = floor((unitPositionY - groundRadius) / 32.f);
+
+					//int airStartX = floor((unitPositionX - airRadius) / 32.f);
+					//int airStartY = floor((unitPositionY - airRadius) / 32.f);
+
+					//int groundEndX = ceil((unitPositionX + groundRadius) / 32.f);
+					//int groundEndY = ceil((unitPositionY + groundRadius) / 32.f);
+
+					//int airEndX = ceil((unitPositionX + airRadius) / 32.f);
+					//int airEndY = ceil((unitPositionY + airRadius) / 32.f);
+
+					////need to clamp
+					//groundStartX = Math::Clamp(groundStartX, 0, mapWidth - 1);
+					//groundStartY = Math::Clamp(groundStartY, 0, mapHeight - 1);
+					//groundEndX = Math::Clamp(groundEndX, 0, mapWidth - 1);
+					//groundEndY = Math::Clamp(groundEndY, 0, mapHeight - 1);
+
+					//airStartX = Math::Clamp(airStartX, 0, mapWidth - 1);
+					//airStartY = Math::Clamp(airStartY, 0, mapHeight - 1);
+					//airEndX = Math::Clamp(airEndX, 0, mapWidth - 1);
+					//airEndY = Math::Clamp(airEndY, 0, mapHeight - 1);
+
+					//if (groundWeapon.damageAmount())
+					//{
+					//	int level = loadedUnit->getPlayer()->getUpgradeLevel(groundWeapon.upgradeType());
+					//	int damage = (groundWeapon.damageAmount() + level * groundWeapon.damageBonus());// *groundWeapon.damageFactor(); //
+					//																					//int damage = static_cast<int>(static_cast<double>((groundWeapon.damageAmount() + level * groundWeapon.damageBonus())) * (static_cast<double>(groundWeapon.damageCooldown() - u->getGroundWeaponCooldown()) / static_cast<double>(groundWeapon.damageCooldown())));
+
+					//	if (damage)
+					//		for (int Y = groundStartY; Y < groundEndY; ++Y)
+					//		{
+					//			for (int X = groundStartX; X < groundEndX; ++X)
+					//			{
+					//				// make influence fall of with distance:
+					//				float dist = Math::Distance(Vector2(x * 32 + 16/*this also can be pos % 32?*/, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+					//				//dist = fmod(x, 32.f);
+					//				dist /= 32.f;
+					//				if (dist <= 1.f)
+					//					dist = 1.f;
+
+					//				opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+					//			}
+					//		}
+					//}
+					//if (airWeapon.damageAmount())
+					//{
+					//	int level = loadedUnit->getPlayer()->getUpgradeLevel(airWeapon.upgradeType());
+					//	int damage = (airWeapon.damageAmount() + level * airWeapon.damageBonus());// *groundWeapon.damageFactor(); //
+					//																			  //int damage = static_cast<int>(static_cast<double>((airWeapon.damageAmount() + level * airWeapon.damageBonus())) * (static_cast<double>(airWeapon.damageCooldown() - u->getAirWeaponCooldown()) / static_cast<double>(airWeapon.damageCooldown())));
+
+					//	if (damage)
+					//		for (int Y = airStartY; Y < airEndY; ++Y)
+					//		{
+					//			for (int X = airStartX; X < airEndX; ++X)
+					//			{
+					//				// make influence fall of with distance:
+					//				float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+					//				//dist = fmod(x, 32.f);
+					//				dist /= 32.f;
+					//				if (dist <= 1.f)
+					//					dist = 1.f;
+
+					//				opinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+					//			}
+					//		}
+					//}
+				}
 			}
-			if (airWeapon.damageAmount())
+			else
 			{
-				int level = u->getPlayer()->getUpgradeLevel(airWeapon.upgradeType());
-				int damage = (airWeapon.damageAmount() + level * airWeapon.damageBonus());// *groundWeapon.damageFactor(); //
-																						  //int damage = static_cast<int>(static_cast<double>((airWeapon.damageAmount() + level * airWeapon.damageBonus())) * (static_cast<double>(airWeapon.damageCooldown() - u->getAirWeaponCooldown()) / static_cast<double>(airWeapon.damageCooldown())));
+				int x, y;
+				x = u->getPosition().x / 32;
+				y = u->getPosition().y / 32;
+				WeaponType groundWeapon = u->getType().groundWeapon();
+				WeaponType airWeapon = u->getType().airWeapon();
+				float groundRadius = static_cast<float>(u->getPlayer()->weaponMaxRange(groundWeapon));
+				float airRadius = static_cast<float>(u->getPlayer()->weaponMaxRange(airWeapon));
 
-				if (damage)
-					for (int Y = airStartY; Y < airEndY; ++Y)
-					{
-						for (int X = airStartX; X < airEndX; ++X)
+				// unit's center position
+				float unitPositionX = static_cast<float>((static_cast<float>(u->getLeft()) + static_cast<float>(u->getRight())) / 2.f);
+				float unitPositionY = static_cast<float>((static_cast<float>(u->getBottom()) + static_cast<float>(u->getTop())) / 2.f);
+
+
+				//todo : handle defense buildings
+				float groundOffset = -0.8;
+
+				if (groundRadius > 32)
+					groundOffset = -1.8;
+
+				//offset = 0.2;
+
+				int groundStartX = floor((unitPositionX - groundRadius) / 32.f + groundOffset);
+				int groundStartY = floor((unitPositionY - groundRadius) / 32.f + groundOffset);
+
+				float airOffset = -0.8;
+
+				if (airRadius > 32)
+					airOffset = -1.8;
+
+				int airStartX = floor((unitPositionX - airRadius) / 32.f + airOffset);
+				int airStartY = floor((unitPositionY - airRadius) / 32.f + airOffset);
+
+				int groundEndX = ceil((unitPositionX + groundRadius) / 32.f - groundOffset);
+				int groundEndY = ceil((unitPositionY + groundRadius) / 32.f - groundOffset);
+
+				int airEndX = ceil((unitPositionX + airRadius) / 32.f - airOffset);
+				int airEndY = ceil((unitPositionY + airRadius) / 32.f - airOffset);
+
+				//need to clamp
+				groundStartX = Math::Clamp(groundStartX, 0, mapWidth - 1);
+				groundStartY = Math::Clamp(groundStartY, 0, mapHeight - 1);
+				groundEndX = Math::Clamp(groundEndX, 0, mapWidth - 1);
+				groundEndY = Math::Clamp(groundEndY, 0, mapHeight - 1);
+
+				airStartX = Math::Clamp(airStartX, 0, mapWidth - 1);
+				airStartY = Math::Clamp(airStartY, 0, mapHeight - 1);
+				airEndX = Math::Clamp(airEndX, 0, mapWidth - 1);
+				airEndY = Math::Clamp(airEndY, 0, mapHeight - 1);
+
+				if (groundWeapon.damageAmount())
+				{
+					int level = u->getPlayer()->getUpgradeLevel(groundWeapon.upgradeType());
+					int damage = (groundWeapon.damageAmount() + level * groundWeapon.damageBonus());// *groundWeapon.damageFactor(); //
+																									//int damage = static_cast<int>(static_cast<double>((groundWeapon.damageAmount() + level * groundWeapon.damageBonus())) * (static_cast<double>(groundWeapon.damageCooldown() - u->getGroundWeaponCooldown()) / static_cast<double>(groundWeapon.damageCooldown())));
+
+					if (damage)
+						for (int Y = groundStartY; Y < groundEndY; ++Y)
 						{
-							// make influence fall of with distance:
-							float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
-							//dist = fmod(x, 32.f);
-							dist /= 32.f;
-							if (dist <= 1.f)
-								dist = 1.f;
+							for (int X = groundStartX; X < groundEndX; ++X)
+							{
+								// make influence fall of with distance:
+								float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+								//dist = fmod(x, 32.f);
+								dist /= 32.f;
+								if (dist <= 1.f)
+									dist = 1.f;
 
-							opinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+								opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+							}
 						}
-					}
+				}
+				if (airWeapon.damageAmount())
+				{
+					int level = u->getPlayer()->getUpgradeLevel(airWeapon.upgradeType());
+					int damage = (airWeapon.damageAmount() + level * airWeapon.damageBonus());// *groundWeapon.damageFactor(); //
+																							  //int damage = static_cast<int>(static_cast<double>((airWeapon.damageAmount() + level * airWeapon.damageBonus())) * (static_cast<double>(airWeapon.damageCooldown() - u->getAirWeaponCooldown()) / static_cast<double>(airWeapon.damageCooldown())));
+
+					if (damage)
+						for (int Y = airStartY; Y < airEndY; ++Y)
+						{
+							for (int X = airStartX; X < airEndX; ++X)
+							{
+								// make influence fall of with distance:
+								float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+								//dist = fmod(x, 32.f);
+								dist /= 32.f;
+								if (dist <= 1.f)
+									dist = 1.f;
+
+								opinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+							}
+						}
+				}
 			}
 			//gridMap[y][x] += u->getType().groundWeapon().damageAmount();
 		};
@@ -2393,9 +2559,8 @@ void HoldAIModule::onFrame()
 
 			int dx, dy;
 
-#ifndef _DEBUG
-			HOLD::drawGrid(u);
-#endif
+			if(drawBoundaries)
+				HOLD::drawBoundary(u);
 
 
 			// Finally make the unit do some stuff!
@@ -2458,7 +2623,7 @@ void HoldAIModule::onFrame()
 							int i = 0;
 
 							if (!enemyBaseCandidate.empty())
-								u->issueCommand(BWAPI::UnitCommand::attack(u, Position(enemyBaseCandidate[0].x * 32, enemyBaseCandidate[0].y * 32)));
+								u->issueCommand(BWAPI::UnitCommand::attack(nullptr, Position(enemyBaseCandidate[0].x * 32, enemyBaseCandidate[0].y * 32)));
 							//u->issueCommand(BWAPI::UnitCommand::attack(u, Position(Broodwar->getStartLocations()[i].x * 32, Broodwar->getStartLocations()[i].y * 32)));
 						}
 					}
@@ -2525,7 +2690,7 @@ void HoldAIModule::onFrame()
 							int i = 0;
 
 							if (!enemyBaseCandidate.empty())
-								u->issueCommand(BWAPI::UnitCommand::attack(u, Position(enemyBaseCandidate[0].x * 32, enemyBaseCandidate[0].y * 32)));
+								u->issueCommand(BWAPI::UnitCommand::attack(nullptr, Position(enemyBaseCandidate[0].x * 32, enemyBaseCandidate[0].y * 32)));
 							//u->issueCommand(BWAPI::UnitCommand::attack(u, Position(Broodwar->getStartLocations()[i].x * 32, Broodwar->getStartLocations()[i].y * 32)));
 						}
 				}
@@ -2539,7 +2704,7 @@ void HoldAIModule::onFrame()
 							int i = 0;
 
 							if (!enemyBaseCandidate.empty())
-								u->issueCommand(BWAPI::UnitCommand::attack(u, Position(enemyBaseCandidate[0].x * 32, enemyBaseCandidate[0].y * 32)));
+								u->issueCommand(BWAPI::UnitCommand::attack(nullptr, Position(enemyBaseCandidate[0].x * 32, enemyBaseCandidate[0].y * 32)));
 							//u->issueCommand(BWAPI::UnitCommand::attack(u, Position(Broodwar->getStartLocations()[i].x * 32, Broodwar->getStartLocations()[i].y * 32)));
 							//Unitset targets;
 							//if (u->isFlying())
@@ -2725,7 +2890,7 @@ void HoldAIModule::onFrame()
 
 						float cooldown = static_cast<float>(u->getGroundWeaponCooldown()) / static_cast<float>(u->getType().groundWeapon().damageCooldown());
 
-						if (cooldown > 0.2f)
+						if (cooldown > 0.f)
 						{
 							u->issueCommand(UnitCommand::move(nullptr, FindMostSafetyZone_Flee(u->getType().isFlyer()? opinfluenceAir : opinfluenceGround, u->getPosition(), u->getType().isFlyer())));
 							//u->issueCommand(UnitCommand::move(u, u->getPosition() + fleeVec));
@@ -2735,7 +2900,9 @@ void HoldAIModule::onFrame()
 							//u->issueCommand(UnitCommand::move(u, u->getPosition() + fleeVec));
 							//todo : How can I handle simple moving case?
 							u->issueCommand(UnitCommand::move(nullptr, FindMostSafetyZone_Attack(u->getType().isFlyer() ? vulAir : vulGround, u->getPosition(), forwardVec, u->getType().isFlyer())));
-							u->issueCommand(UnitCommand::rightClick(u, closestTarget));
+							
+							if(closestTarget->getType() != UnitTypes::Unknown)
+								u->issueCommand(UnitCommand::rightClick(nullptr, closestTarget));
 						}
 					}
 				}
@@ -3121,11 +3288,12 @@ void HoldAIModule::onFrame()
 			auto us = UnitDataSets[Broodwar->enemy()].find(eus.first);
 			if (us != UnitDataSets[Broodwar->enemy()].end())
 			{
+				if(drawBoundaries)
 				for(auto su : us->second.m_savedUnits)
 				{
 					if (su.second.m_unit != nullptr)
 					{
-						drawGrid(su.second.m_lastType, su.second.m_lastPosition);
+						drawBoundary(su.second.m_lastType, su.second.m_lastPosition);
 						Broodwar->drawTextMap(su.second.m_lastPosition, "%c%d", Text::Cyan, su.second.m_lastSeen);
 					}
 					
@@ -3174,7 +3342,7 @@ void HoldAIModule::onFrame()
 
 		//My Influence
 		BWAPI::Position scrPos = Broodwar->getScreenPosition();
-#ifndef _DEBUG
+
 		auto DrawInfluenMap = [](auto & scrPos, auto & map, auto boxColor, auto txtColor)
 		{
 			for (int y = scrPos.y / 32; y < (scrPos.y + 14 * 32) / 32 + 1 && y < Broodwar->mapHeight(); ++y)
@@ -3189,10 +3357,6 @@ void HoldAIModule::onFrame()
 				}
 			}
 		};
-#else
-		auto DrawInfluenMap = [](auto & scrPos, auto & map, auto boxColor, auto txtColor) {};
-#endif
-
 
 
 		/*
@@ -3289,8 +3453,7 @@ void HoldAIModule::onSendText(std::string text)
 
 	BWEM::utils::MapDrawer::ProcessCommand(text);
 
-	// Send the text to the game if it is not being processed.
-	Broodwar->sendText("%s", text.c_str());
+	
 
 
 	// Make sure to use %s and pass the text as a parameter,
@@ -3303,22 +3466,53 @@ void HoldAIModule::onSendText(std::string text)
 			Broodwar->printf("Analyzing map... this may take a minute");
 			//CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)AnalyzeThread, NULL, 0, NULL);
 		}
+		
+
+
+
+
 	}
-	//else
-	//{
-	// if (text == "f") {
-	//  BWAPI::Broodwar->setLocalSpeed(0);
-	// }
-	// if (text == "m") {
-	//  BWAPI::Broodwar->setLocalSpeed(20);
-	// }
-	// if (text == "s") {
-	//  BWAPI::Broodwar->setLocalSpeed(40);
-	// }
-	// 
-	// //Broodwar->printf("You typed '%s'!",text.c_str());
-	// //Broodwar->sendText("%s",text.c_str());
-	//}
+	else if("range" == text)
+	{
+		drawRange = !drawRange;
+
+	}
+	else if("boundary" == text)
+	{
+		drawBoundaries = !drawBoundaries;
+
+	}
+	else if("dir" == text)
+	{
+		drawDirection = !drawDirection;
+
+	}
+	else if("grid" == text)
+	{
+		drawGridMap = !drawGridMap;
+
+	}
+	else
+	{
+		//else
+		//{
+		// if (text == "f") {
+		//  BWAPI::Broodwar->setLocalSpeed(0);
+		// }
+		// if (text == "m") {
+		//  BWAPI::Broodwar->setLocalSpeed(20);
+		// }
+		// if (text == "s") {
+		//  BWAPI::Broodwar->setLocalSpeed(40);
+		// }
+		// 
+		// //Broodwar->printf("You typed '%s'!",text.c_str());
+		// //Broodwar->sendText("%s",text.c_str());
+		//}
+
+		// Send the text to the game if it is not being processed.
+		Broodwar->sendText("%s", text.c_str());
+	}
 
 }
 
@@ -3371,28 +3565,31 @@ void HoldAIModule::onUnitShow(BWAPI::Unit unit)
 		//since it's not the discover function, we should check whether it is in container or new
 		UnitType unitType = unit->getType();
 
-		//UnitDataSets[unit->getPlayer()][unitType].AddUnit(HOLD::UnitData(unit));
-
-		//if the container doesn't exist, it's new, just add it
-		if(UnitDataSets[unit->getPlayer()].find(unitType) != UnitDataSets[unit->getPlayer()].end())
+		//if (unitType.isBuilding())
 		{
-			//if the container exist, check this is new or old
-			if (UnitDataSets[unit->getPlayer()][unitType].m_savedUnits.find(unit->getID()) != UnitDataSets[unit->getPlayer()][unitType].m_savedUnits.end())
-			{
-				UnitDataSets[unit->getPlayer()][unitType].UpdateUnit(unit);
 
+			//UnitDataSets[unit->getPlayer()][unitType].AddUnit(HOLD::UnitData(unit));
+
+			//if the container doesn't exist, it's new, just add it
+			if (UnitDataSets[unit->getPlayer()].find(unitType) != UnitDataSets[unit->getPlayer()].end())
+			{
+				//if the container exist, check this is new or old
+				if (UnitDataSets[unit->getPlayer()][unitType].m_savedUnits.find(unit->getID()) != UnitDataSets[unit->getPlayer()][unitType].m_savedUnits.end())
+				{
+					UnitDataSets[unit->getPlayer()][unitType].UpdateUnit(unit);
+
+				}
+				else
+				{
+					UnitDataSets[unit->getPlayer()][unitType].AddUnit(unit);
+
+				}
 			}
 			else
 			{
 				UnitDataSets[unit->getPlayer()][unitType].AddUnit(unit);
-
 			}
 		}
-		else
-		{
-			UnitDataSets[unit->getPlayer()][unitType].AddUnit(unit);
-		}
-
 		//if (UnitDataSets[unit->getPlayer()][unitType].m_savedUnits[unit->getID()].m_lastPlayer == nullptr)
 		//{
 		//	UnitDataSets[unit->getPlayer()][unitType].AddUnit(unit);
