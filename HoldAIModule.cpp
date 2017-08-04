@@ -1,3 +1,15 @@
+/*****************************************************************************/
+/*!
+\file   HoldAIModule.cpp
+\author Yeongki Baek
+\par    email: yeongki.baek\@digipen.edu
+\par    GAM400
+\date   08/01/2017
+\brief
+This is the interface file for the module
+Copyright 2017, Digipen Institute of Technology
+*/
+/*****************************************************************************/
 #include "Precompiled.hpp"
 
 #include "HoldAIModule.hpp"
@@ -32,6 +44,9 @@ static bool drawRange = false;
 static bool drawBoundaries = false;
 static bool drawDirection = false;
 static bool drawGridMap = false;
+
+static bool firstattack_mutal = false;
+static bool firstattack_hydra = false;
 
 // create array
 /*
@@ -648,7 +663,7 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<short> &inf_map, BWAPI::Po
 		neighbor[3] = neighbor[5] = neighbor[6] = true;
 	}
 
-	int lowest = std::numeric_limits<int>::max();
+	int lowest = (std::numeric_limits<int>::max)();
 	for (int i = 0; i < 8; ++i)
 	{
 		if (!neighbor[i])
@@ -686,7 +701,7 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<short> &inf_map, BWAPI::Po
 	if (candidates.size())
 	{
 		Position returnPosition{ pos };
-		int closest = std::numeric_limits<int>::max();
+		int closest = (std::numeric_limits<int>::max)();
 
 
 		for (TilePosition candidate : candidates)
@@ -721,7 +736,7 @@ BWAPI::Position FindMostSafetyZone_Flee(std::vector<short> &inf_map, BWAPI::Posi
 	std::vector<TilePosition> candidates;
 
 
-	int lowest = std::numeric_limits<int>::max();
+	int lowest = (std::numeric_limits<int>::max)();
 	for (int i = 0; i < 8; ++i)
 	{
 		int dx = std::get<0>(dirs[i]);
@@ -758,7 +773,7 @@ BWAPI::Position FindMostSafetyZone_Flee(std::vector<short> &inf_map, BWAPI::Posi
 	if (candidates.size())
 	{
 		Position returnPosition{ pos };
-		int closest = std::numeric_limits<int>::max();
+		int closest = (std::numeric_limits<int>::max)();
 
 		for (TilePosition candidate : candidates)
 		{
@@ -918,7 +933,7 @@ bool build(UnitCommand & mt)
 								}
 
 								BWAPI::TilePosition targetBuildLocation;
-								int minLength = std::numeric_limits<int>::max();
+								int minLength = (std::numeric_limits<int>::max)();
 								for (auto base : candidates)
 								{
 									if (Broodwar->hasPath(Position(starting.x * 32, starting.y * 32), base->Center()))
@@ -1434,6 +1449,7 @@ void HoldAIModule::onStart()
 		/*Broodwar->sendText("power overwhelming");
 		Broodwar->sendText("operation cwal");
 		Broodwar->sendText("the gathering");
+		Broodwar->sendText("modify the phase variance");
 		Broodwar->sendText("food for thought");
 		Broodwar->sendText("war aint what it used to be");
 		Broodwar->sendText("staying alive");
@@ -2026,7 +2042,7 @@ void HoldAIModule::onFrame()
 			if (drawRange)
 			{
 				Broodwar->drawTextMap(u->getPosition(),
-					"%c#%d %s\n %.2f\n%c%d, %d\n%d", u->isAccelerating() ? Text::Grey : Text::Red, u->getID(), u->getOrder().c_str(), abs(u->getVelocityX()) + abs(u->getVelocityY()), Text::BrightRed, u->getOrderTargetPosition().x, u->getOrderTargetPosition().y, u->getType().sightRange());// , Text::BrightRed, i->getGroundWeaponCooldown());
+					"%c#%d %s\n %.2f\n%d, %d\n%d", u->isAccelerating() ? Text::Grey : Text::Red, u->getID(), u->getOrder().c_str(), abs(u->getVelocityX()) + abs(u->getVelocityY()), u->getOrderTargetPosition().x, u->getOrderTargetPosition().y, u->getType().sightRange());// , Text::BrightRed, i->getGroundWeaponCooldown());
 
 				if (u->getTarget() != nullptr)
 				{
@@ -2381,7 +2397,8 @@ void HoldAIModule::onFrame()
 							for (int X = groundStartX; X < groundEndX; ++X)
 							{
 								// make influence fall of with distance:
-								float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+								//float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+								float dist = Math::Distance(Vector2(x * 32 + static_cast<int>(unitPositionX) % 32, y * 32 + static_cast<int>(unitPositionY) % 32), Vector2(X * 32 + 16, Y * 32 + 16));
 								//dist = fmod(x, 32.f);
 								dist /= 32.f;
 								if (dist <= 1.f)
@@ -2403,7 +2420,8 @@ void HoldAIModule::onFrame()
 							for (int X = airStartX; X < airEndX; ++X)
 							{
 								// make influence fall of with distance:
-								float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+								//float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+								float dist = Math::Distance(Vector2(x * 32 + static_cast<int>(unitPositionX) % 32, y * 32 + static_cast<int>(unitPositionY) % 32), Vector2(X * 32 + 16, Y * 32 + 16));
 								//dist = fmod(x, 32.f);
 								dist /= 32.f;
 								if (dist <= 1.f)
@@ -2519,7 +2537,8 @@ void HoldAIModule::onFrame()
 							for (int X = groundStartX; X < groundEndX; ++X)
 							{
 								// make influence fall of with distance:
-								float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+								//float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+								float dist = Math::Distance(Vector2(x * 32 + static_cast<int>(unitPositionX) % 32, y * 32 + static_cast<int>(unitPositionY) % 32), Vector2(X * 32 + 16, Y * 32 + 16));
 								//dist = fmod(x, 32.f);
 								dist /= 32.f;
 								if (dist <= 1.f)
@@ -2541,7 +2560,8 @@ void HoldAIModule::onFrame()
 							for (int X = airStartX; X < airEndX; ++X)
 							{
 								// make influence fall of with distance:
-								float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+								//float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+								float dist = Math::Distance(Vector2(x * 32 + static_cast<int>(unitPositionX) % 32, y * 32 + static_cast<int>(unitPositionY) % 32), Vector2(X * 32 + 16, Y * 32 + 16));
 								//dist = fmod(x, 32.f);
 								dist /= 32.f;
 								if (dist <= 1.f)
@@ -2682,28 +2702,99 @@ void HoldAIModule::onFrame()
 				}
 				else if (u->getType() == UnitTypes::Zerg_Mutalisk)
 				{
-					if (UnitDataSets[Broodwar->self()][u->getType()].m_units.size() >= 10)
+					if (firstattack_mutal || UnitDataSets[Broodwar->self()][u->getType()].m_units.size() >= 10)
 						if (!(u->getOrder() == Orders::AttackMove)
 							|| !(u->getOrder() == Orders::AttackUnit))
 						{
+							firstattack_mutal = true;
 							//int i = rand() % Broodwar->getStartLocations().size();
 							int i = 0;
 
-							if (!enemyBaseCandidate.empty())
+
+							if(foundEnemyBase)
+							{
+								if (enemyBase.empty())
+								{
+									//attack remain building first?, then search nearest base(it could be expansion) // it should be fixed to search expansion first
+									bool selected = false;
+									for (auto eus : UnitDataSets[Broodwar->enemy()])
+									{
+										auto us = UnitDataSets[Broodwar->enemy()].find(eus.first);
+										if (selected)
+											break;
+										if (us != UnitDataSets[Broodwar->enemy()].end())
+										{
+											for (auto su : us->second.m_savedUnits)
+											{
+												if (su.second.m_unit != nullptr
+													&& su.second.m_lastType.isBuilding())
+												{
+													//Broodwar->drawTextMap(su.second.m_lastPosition, "%c%d", Text::Cyan, su.second.m_lastSeen);
+													u->issueCommand(BWAPI::UnitCommand::attack(nullptr, su.second.m_lastPosition));
+													selected = true;
+													break;
+												}
+											}
+										}
+									}
+								}
+								else //if enemyBase is remained
+								{
+									u->issueCommand(BWAPI::UnitCommand::attack(nullptr, Position(enemyBase[0].x * 32, enemyBase[0].y * 32)));
+								}
+
+							}
+
+							else if (!enemyBaseCandidate.empty())
 								u->issueCommand(BWAPI::UnitCommand::attack(nullptr, Position(enemyBaseCandidate[0].x * 32, enemyBaseCandidate[0].y * 32)));
 							//u->issueCommand(BWAPI::UnitCommand::attack(u, Position(Broodwar->getStartLocations()[i].x * 32, Broodwar->getStartLocations()[i].y * 32)));
 						}
 				}
 				else if (u->getType() == UnitTypes::Zerg_Hydralisk)
 				{
-					if (UnitDataSets[Broodwar->self()][u->getType()].m_units.size() >= 20)
+					if (firstattack_hydra ||UnitDataSets[Broodwar->self()][u->getType()].m_units.size() >= 20)
 						if (!(u->getOrder() == Orders::AttackMove)
 							|| !(u->getOrder() == Orders::AttackUnit))
 						{
+							firstattack_hydra = true;
 							//int i = rand() % Broodwar->getStartLocations().size();
 							int i = 0;
 
-							if (!enemyBaseCandidate.empty())
+							if (foundEnemyBase)
+							{
+								if (enemyBase.empty())
+								{
+									//attack remain building first?, then search nearest base(it could be expansion) // it should be fixed to search expansion first
+									bool selected = false;
+									for (auto eus : UnitDataSets[Broodwar->enemy()])
+									{
+										auto us = UnitDataSets[Broodwar->enemy()].find(eus.first);
+										if (selected)
+											break;
+										if (us != UnitDataSets[Broodwar->enemy()].end())
+										{
+											for (auto su : us->second.m_savedUnits)
+											{
+												if (su.second.m_unit != nullptr
+													&& su.second.m_lastType.isBuilding())
+												{
+													//Broodwar->drawTextMap(su.second.m_lastPosition, "%c%d", Text::Cyan, su.second.m_lastSeen);
+													u->issueCommand(BWAPI::UnitCommand::attack(nullptr, su.second.m_lastPosition));
+													selected = true;
+													break;
+												}
+											}
+										}
+									}
+								}
+								else //if enemyBase is remained
+								{
+									u->issueCommand(BWAPI::UnitCommand::attack(nullptr, Position(enemyBase[0].x * 32, enemyBase[0].y * 32)));
+								}
+
+							}
+
+							else if (!enemyBaseCandidate.empty())
 								u->issueCommand(BWAPI::UnitCommand::attack(nullptr, Position(enemyBaseCandidate[0].x * 32, enemyBaseCandidate[0].y * 32)));
 							//u->issueCommand(BWAPI::UnitCommand::attack(u, Position(Broodwar->getStartLocations()[i].x * 32, Broodwar->getStartLocations()[i].y * 32)));
 							//Unitset targets;
@@ -3073,13 +3164,13 @@ void HoldAIModule::onFrame()
 		//todo: how to apply abs?
 
 		std::transform(tensionGround.begin(), tensionGround.end(), influenceGround.begin(),
-			vulGround.begin(), [](auto &first, auto &second)->int
+			vulGround.begin(), [](auto &first, auto &second)->short
 		{
 			return first - abs(second);
 		});
 
 		std::transform(tensionAir.begin(), tensionAir.end(), influenceAir.begin(),
-			vulAir.begin(), [](auto& first, auto &second)->int
+			vulAir.begin(), [](auto& first, auto &second)->short
 		{
 			return first - abs(second);
 		});
@@ -3492,6 +3583,19 @@ void HoldAIModule::onSendText(std::string text)
 		drawGridMap = !drawGridMap;
 
 	}
+	else if("cheat" == text)
+	{
+		Broodwar->sendText("power overwhelming");
+		Broodwar->sendText("operation cwal");
+		Broodwar->sendText("the gathering");
+		Broodwar->sendText("modify the phase variance");
+		Broodwar->sendText("food for thought");
+		Broodwar->sendText("war aint what it used to be");
+		Broodwar->sendText("staying alive");
+		Broodwar->sendText("show me the money");
+		Broodwar->sendText("show me the money");
+		Broodwar->sendText("show me the money");
+	}
 	else
 	{
 		//else
@@ -3565,6 +3669,12 @@ void HoldAIModule::onUnitShow(BWAPI::Unit unit)
 		//since it's not the discover function, we should check whether it is in container or new
 		UnitType unitType = unit->getType();
 
+		if (unitType.isResourceDepot())
+		{
+			foundEnemyBase = true;
+			enemyBase.emplace_back(unit->getTilePosition());
+		}
+
 		//if (unitType.isBuilding())
 		{
 
@@ -3582,8 +3692,9 @@ void HoldAIModule::onUnitShow(BWAPI::Unit unit)
 				else
 				{
 					UnitDataSets[unit->getPlayer()][unitType].AddUnit(unit);
-
 				}
+
+				
 			}
 			else
 			{
@@ -3686,7 +3797,6 @@ void HoldAIModule::onUnitDestroy(BWAPI::Unit unit)
 {
 	try
 	{
-
 		UnitType unitType = unit->getType();
 		if (unit->getType().isMineralField()) theMap.OnMineralDestroyed(unit);
 		else if (unit->getType().isSpecialBuilding()) theMap.OnStaticBuildingDestroyed(unit);
@@ -3716,6 +3826,9 @@ void HoldAIModule::onUnitDestroy(BWAPI::Unit unit)
 		//	}
 		//}
 		UnitDataSets[unit->getPlayer()][unitType].RemoveUnit(unit);
+
+		if (unitType.isResourceDepot() && unit->getPlayer() != Broodwar->self())
+			enemyBase.erase(std::find(enemyBase.begin(), enemyBase.end(), unit->getTilePosition()));
 
 		//todo : the unit must removed from the unit container
 		Broodwar->registerEvent([=](Game*)
