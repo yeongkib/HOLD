@@ -49,6 +49,175 @@ static bool drawAll = false;
 static bool firstattack_mutal = false;
 static bool firstattack_hydra = false;
 
+
+struct MyGrid
+{
+	/*
+	 * Topleft is the original position of MYGrid
+	 *  忙式式成式式忖  
+	 *  弛 0弛 1弛  
+	 *  弛  弛  弛	
+	 *  戍式式托式式扣	
+	 *  弛 2弛 3弛	
+	 *  弛  弛  弛	
+	 *  戌式式扛式式戎	
+	 *
+	 */
+	union
+	{
+		short quarter[4];
+		double Total;
+	};
+
+
+	//todo : how to set up position? -> use macro
+	/*TilePosition pos;
+	WalkPosition LeftTop;
+	WalkPosition RightTop;
+	WalkPosition LeftBot;
+	WalkPosition RightBot;*/
+
+	MyGrid() : Total(0.)/*, pos{ TilePosition(0, 0) },
+		LeftTop{ WalkPosition(0, 0) },
+		RightTop{ WalkPosition(0, 0) },
+		LeftBot{ WalkPosition(0, 0) },
+		RightBot{ WalkPosition(0, 0) }*/
+	{
+	};
+
+	MyGrid(int sameValue = 0) 
+	{
+		quarter[0] = quarter[1] = quarter[2] = quarter[3] = static_cast<short>(sameValue);
+	}
+
+	MyGrid(short sameValue = 0)
+	{
+		quarter[0] = quarter[1] = quarter[2] = quarter[3] = sameValue;
+	}
+
+	MyGrid(short LeftTop = 0, short RightTop = 0, short LeftBot = 0, short RightBot = 0)
+	{
+		quarter[0] = LeftTop;
+		quarter[1] = RightTop;
+		quarter[2] = LeftBot;
+		quarter[3] = RightBot;
+	}
+
+	void SetLeftTop(short value = 0)
+	{
+		quarter[0] = value;
+	}
+	void SetRightTop(short value = 0)
+	{
+		quarter[1] = value;
+	}
+	void SetLeftBot(short value = 0)
+	{
+		quarter[2] = value;
+	}
+	void SetRightBot(short value = 0)
+	{
+		quarter[3] = value;
+	}
+
+	short GetLeftTop() const
+	{
+		return quarter[0];
+	}
+	short GetRightTop() const
+	{
+		return quarter[1];
+	}
+	short GetLeftBot() const
+	{
+		return quarter[2];
+	}
+	short GetRightBot() const
+	{
+		return quarter[3];
+	}
+
+	short* GetQuarters()
+	{
+		return *&quarter;		
+	}
+
+	bool IsAllSame()
+	{
+		if (quarter[0] == quarter[1]
+			&& quarter[0] == quarter[2]
+			&& quarter[0] == quarter[3])
+			return true;
+
+		return false;
+	}
+
+
+
+	//warn : is this best?
+	MyGrid MyGrid::operator+(const int & value) const
+	{
+		int temp = value;
+		return *this + MyGrid{ static_cast<short>(temp), static_cast<short>(temp), static_cast<short>(temp), static_cast<short>(temp) };
+	}
+	MyGrid MyGrid::operator+(const MyGrid & rhs) const
+	{
+		return MyGrid{this->GetLeftTop() + rhs.GetLeftTop(), this->GetRightTop() + rhs.GetRightTop(), this->GetLeftBot() + rhs.GetLeftBot(), this->GetRightBot() + rhs.GetRightBot()};
+	}
+	MyGrid MyGrid::operator-(const int & value) const
+	{
+		int temp = value;
+		return *this - MyGrid{ static_cast<short>(temp), static_cast<short>(temp), static_cast<short>(temp), static_cast<short>(temp) };
+	}
+	MyGrid MyGrid::operator-(const MyGrid & rhs) const
+	{
+		return MyGrid{ this->GetLeftTop() - rhs.GetLeftTop(), this->GetRightTop() - rhs.GetRightTop(), this->GetLeftBot() - rhs.GetLeftBot(), this->GetRightBot() - rhs.GetRightBot() };
+	}
+	bool MyGrid::operator!=(short value)
+	{
+		if (this->quarter[0] != value
+			&& this->quarter[1] != value
+			&& this->quarter[2] != value
+			&& this->quarter[3] != value)
+			return true;
+		return false;
+	}
+	bool MyGrid::operator==(short value)
+	{
+		if (this->quarter[0] == value
+			&& this->quarter[1] == value
+			&& this->quarter[2] == value
+			&& this->quarter[3] == value)
+			return true;
+		return false;
+	}
+
+	MyGrid& operator=(const MyGrid& rhs)
+	{
+		quarter[0] = rhs.quarter[0];
+		quarter[1] = rhs.quarter[1];
+		quarter[2] = rhs.quarter[2];
+		quarter[3] = rhs.quarter[3];
+		return *this;
+	}
+
+	MyGrid& operator=(const int & value)
+	{
+		quarter[0] = quarter[1] = quarter[2] = quarter[3] = static_cast<short>(value);
+		return *this;
+	}
+	
+	
+
+
+
+	
+
+	//todo : add converting function
+};
+
+
+
 // create array
 /*
 * My Influence
@@ -62,18 +231,18 @@ Calculated as My Influence+OpponentInfluence
 Vulnerability Map
 Calculated as Tension map -Abs(Influence map)
 */
-std::vector<short> myinfluenceGround;
-std::vector<short> myinfluenceAir;
-std::vector<short> opinfluenceGround;
-std::vector<short> opinfluenceAir;
-std::vector<short> influenceGround;
-std::vector<short> influenceAir;
-std::vector<short> tensionGround;
-std::vector<short> tensionAir;
-std::vector<short> tensionTotal;
-std::vector<short> vulGround;
-std::vector<short> vulAir;
-std::vector<short> vulTotal;
+//std::vector<MyGrid> myinfluenceGround;
+//std::vector<MyGrid> myinfluenceAir;
+std::vector<MyGrid> opinfluenceGround;
+std::vector<MyGrid> opinfluenceAir;
+std::vector<MyGrid> influenceGround;
+std::vector<MyGrid> influenceAir;
+std::vector<MyGrid> tensionGround;
+std::vector<MyGrid> tensionAir;
+std::vector<MyGrid> tensionTotal;
+std::vector<MyGrid> vulGround;
+std::vector<MyGrid> vulAir;
+std::vector<MyGrid> vulTotal;
 static int mapWidth = 0;
 static int mapHeight = 0;
 
@@ -83,6 +252,40 @@ namespace { auto & theMap = BWEM::Map::Instance(); }
 
 namespace HOLD
 {
+	std::array<Position, 4> Neighbours_Walk{ Position{ 8, 8 }, Position{ 24, 8 }, Position{ 8, 24 }, Position{ 24 ,24 }};
+
+
+	auto SetValues = [](MyGrid & cell, int targetpos_x, int targetpos_y, const int & curpos_x, const int & curpos_y, const int & damage, auto & op )
+	{
+		/*
+		 * input : each cell, and curret position and target position
+		 * loop for each quarter
+		 */
+
+		auto CalInfluence = [](short & cell, int targetpos_x, int targetpos_y, const int & curpos_x, const int & curpos_y, const int & damage, auto & op)
+		{
+			// make influence fall of with distance:
+			float dist = Math::Distance(Vector2(curpos_x, curpos_y), Vector2(targetpos_x, targetpos_y));
+			//dist = fmod(x, 32.f);
+			dist /= 32.f;
+			if (dist <= 1.f)
+				dist = 1.f;
+
+			//todo : set influences into walktile
+			//opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+			//opinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+
+			//todo : how to handle operator?? it can be minus and assign
+			//cell  static_cast<short>(static_cast<float>(damage) / dist);
+			cell = op(cell, static_cast<short>(static_cast<float>(damage) / dist));
+		};
+
+		for(char i = 0; i < 4; ++i)
+		{
+			CalInfluence(cell.GetQuarters()[i], targetpos_x * 32 + Neighbours_Walk[i].x, targetpos_y * 32 + Neighbours_Walk[i].y, curpos_x, curpos_y, damage, op);
+		}
+	};
+
 	auto registerEvent = [](auto action, auto condition = nullptr, int timesToRun = -1, int framesToCheck = 0)
 	{
 		Broodwar->registerEvent(action, condition, 1, 1); // do
@@ -579,6 +782,11 @@ namespace HOLD
 		//todo: add cell info
 	};
 
+	MyGrid abs(const MyGrid & grid)
+	{
+		return MyGrid{ static_cast<short>(std::abs(grid.quarter[0])), static_cast<short>(std::abs(grid.quarter[1])), static_cast<short>(std::abs(grid.quarter[2])), static_cast<short>(std::abs(grid.quarter[3])) };
+	}
+
 }//namespace HOLD
 
 #include "BehaviorTree.hpp"
@@ -616,7 +824,7 @@ BWAPI::Position Next()
  * 4. 
  */
 
-BWAPI::Position FindMostSafetyZone_Attack(std::vector<short> &inf_map, BWAPI::Position& pos, BWAPI::Position& dir, bool ground = false)
+BWAPI::Position FindMostSafetyZone_Attack(std::vector<MyGrid> &inf_map, BWAPI::Position& pos, BWAPI::Position& dir, bool ground = false)
 {
 	std::vector<TilePosition> candidates;
 
@@ -684,7 +892,8 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<short> &inf_map, BWAPI::Po
 				if (!Broodwar->isWalkable(WalkPosition{ targetPosition.x * 4, targetPosition.y * 4 }))
 					continue;*/
 
-			int influence = inf_map[targetPosition.y * mapHeight + targetPosition.x];
+			//todo : cal and get exact position
+			int influence = 0;// inf_map[targetPosition.y * mapHeight + targetPosition.x];
 
 			if (influence < lowest)
 			{
@@ -732,7 +941,7 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<short> &inf_map, BWAPI::Po
 
 
 
-BWAPI::Position FindMostSafetyZone_Flee(std::vector<short> &inf_map, BWAPI::Position& pos, bool ground = false)
+BWAPI::Position FindMostSafetyZone_Flee(std::vector<MyGrid> &inf_map, BWAPI::Position& pos, bool ground = false)
 {
 	std::vector<TilePosition> candidates;
 
@@ -756,7 +965,8 @@ BWAPI::Position FindMostSafetyZone_Flee(std::vector<short> &inf_map, BWAPI::Posi
 				if (!Broodwar->isWalkable(WalkPosition{ targetPosition.x * 4, targetPosition.y * 4 }))
 					continue;*/
 
-			int influence = inf_map[targetPosition.y * mapHeight + targetPosition.x];
+			//todo : cal and get exact position
+			int influence = 0;// inf_map[targetPosition.y * mapHeight + targetPosition.x];
 
 			if (influence < lowest)
 			{
@@ -1382,29 +1592,30 @@ void HoldAIModule::onStart()
 		gridMap[i] = new int[Broodwar->mapWidth()];*/
 		mapWidth = Broodwar->mapWidth();
 		mapHeight = Broodwar->mapHeight();
-		myinfluenceGround.resize(mapHeight * mapWidth);
+		/*
+		myinfluenceGround.resize(mapHeight * mapWidth, MyGrid{0});
 
-		myinfluenceAir.resize(mapHeight * mapWidth);
+		myinfluenceAir.resize(mapHeight * mapWidth, MyGrid{ 0 });
+		*/
+		opinfluenceGround.resize(mapHeight * mapWidth, MyGrid{ 0 });
 
-		opinfluenceGround.resize(mapHeight * mapWidth);
+		opinfluenceAir.resize(mapHeight * mapWidth, MyGrid{ 0 });
 
-		opinfluenceAir.resize(mapHeight * mapWidth);
+		influenceGround.resize(mapHeight * mapWidth, MyGrid{ 0 });
 
-		influenceGround.resize(mapHeight * mapWidth);
+		influenceAir.resize(mapHeight * mapWidth, MyGrid{ 0 });
 
-		influenceAir.resize(mapHeight * mapWidth);
+		tensionGround.resize(mapHeight * mapWidth, MyGrid{ 0 });
 
-		tensionGround.resize(mapHeight * mapWidth);
+		tensionAir.resize(mapHeight * mapWidth, MyGrid{ 0 });
 
-		tensionAir.resize(mapHeight * mapWidth);
+		tensionTotal.resize(mapHeight * mapWidth, MyGrid{ 0 });
 
-		tensionTotal.resize(mapHeight * mapWidth);
+		vulGround.resize(mapHeight * mapWidth, MyGrid{ 0 });
 
-		vulGround.resize(mapHeight * mapWidth);
+		vulAir.resize(mapHeight * mapWidth, MyGrid{ 0 });
 
-		vulAir.resize(mapHeight * mapWidth);
-
-		vulTotal.resize(mapHeight * mapWidth);
+		vulTotal.resize(mapHeight * mapWidth, MyGrid{ 0 });
 
 		//DataContext data;
 		//Unitset_drone drones(5);  // Building with 5 doors to get in.
@@ -1847,18 +2058,20 @@ void HoldAIModule::onEnd(bool isWinner)
 		}
 		//UnitDataSets[Broodwar->self()].clear();
 
-		std::vector<short>().swap(myinfluenceGround);
-		std::vector<short>().swap(myinfluenceAir);
-		std::vector<short>().swap(opinfluenceGround);
-		std::vector<short>().swap(opinfluenceAir);
-		std::vector<short>().swap(influenceGround);
-		std::vector<short>().swap(influenceAir);
-		std::vector<short>().swap(tensionGround);
-		std::vector<short>().swap(tensionAir);
-		std::vector<short>().swap(tensionTotal);
-		std::vector<short>().swap(vulGround);
-		std::vector<short>().swap(vulAir);
-		std::vector<short>().swap(vulTotal);
+		/*
+		std::vector<MyGrid>().swap(myinfluenceGround);
+		std::vector<MyGrid>().swap(myinfluenceAir);
+		*/
+		std::vector<MyGrid>().swap(opinfluenceGround);
+		std::vector<MyGrid>().swap(opinfluenceAir);
+		std::vector<MyGrid>().swap(influenceGround);
+		std::vector<MyGrid>().swap(influenceAir);
+		std::vector<MyGrid>().swap(tensionGround);
+		std::vector<MyGrid>().swap(tensionAir);
+		std::vector<MyGrid>().swap(tensionTotal);
+		std::vector<MyGrid>().swap(vulGround);
+		std::vector<MyGrid>().swap(vulAir);
+		std::vector<MyGrid>().swap(vulTotal);
 	}
 }
 
@@ -1961,10 +2174,11 @@ void HoldAIModule::onFrame()
 
 		//memset(gridMap, 0, sizeof(gridMap[0][0]) * (Broodwar->mapWidth()) * (Broodwar->mapHeight()));
 
+		/*
 		std::fill(myinfluenceGround.begin(), myinfluenceGround.end(), 0);
 
 		std::fill(myinfluenceAir.begin(), myinfluenceAir.end(), 0);
-
+		*/
 		std::fill(opinfluenceGround.begin(), opinfluenceGround.end(), 0);
 
 		std::fill(opinfluenceAir.begin(), opinfluenceAir.end(), 0);
@@ -2198,8 +2412,8 @@ void HoldAIModule::onFrame()
 				//for(Unit loadedUnit : u->getLoadedUnits())
 				{
 					int x, y;
-					x = u->getPosition().x / 32;
-					y = u->getPosition().y / 32;
+					x = u->getPosition().x;// / 32;
+					y = u->getPosition().y;// / 32;
 					WeaponType groundWeapon = BWAPI::WeaponTypes::Gauss_Rifle;
 					WeaponType airWeapon = BWAPI::WeaponTypes::Gauss_Rifle;
 					float groundRadius = static_cast<float>(u->getPlayer()->weaponMaxRange(groundWeapon)) + 1.f;
@@ -2242,14 +2456,22 @@ void HoldAIModule::onFrame()
 								for (int X = groundStartX; X < groundEndX; ++X)
 								{
 									// make influence fall of with distance:
-									float dist = Math::Distance(Vector2(x * 32 + 16/*this also can be pos % 32?*/, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
-									//dist = fmod(x, 32.f);
-									dist /= 32.f;
-									if (dist <= 1.f)
-										dist = 1.f;
+									//float dist = Math::Distance(Vector2(x * 32 + 16/*this also can be pos % 32?*/, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
+									////dist = fmod(x, 32.f);
+									//dist /= 32.f;
+									//if (dist <= 1.f)
+									//	dist = 1.f;
 
-									opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
-									opinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+									//todo : set influences into walktile
+									HOLD::SetValues(opinfluenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+									HOLD::SetValues(opinfluenceAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+									HOLD::SetValues(influenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::minus<short>());
+									HOLD::SetValues(influenceAir[Y * mapHeight + x], X, Y, x, y, damage, std::minus<short>());
+									HOLD::SetValues(tensionGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+									HOLD::SetValues(tensionAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+									HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage * 2, std::plus<short>());
+									//opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+									//opinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
 
 								}
 							}
@@ -2338,8 +2560,8 @@ void HoldAIModule::onFrame()
 			else
 			{
 				int x, y;
-				x = u->getPosition().x / 32;
-				y = u->getPosition().y / 32;
+				x = u->getPosition().x;// / 32;
+				y = u->getPosition().y;// / 32;
 				WeaponType groundWeapon = u->getType().groundWeapon();
 				WeaponType airWeapon = u->getType().airWeapon();
 				float groundRadius = static_cast<float>(u->getPlayer()->weaponMaxRange(groundWeapon));
@@ -2358,22 +2580,22 @@ void HoldAIModule::onFrame()
 
 				//offset = 0.2;
 
-				int groundStartX = floor((unitPositionX - groundRadius) / 32.f + groundOffset);
-				int groundStartY = floor((unitPositionY - groundRadius) / 32.f + groundOffset);
+				int groundStartX = static_cast<int>(floor((unitPositionX - groundRadius) / 32.f + groundOffset));
+				int groundStartY = static_cast<int>(floor((unitPositionY - groundRadius) / 32.f + groundOffset));
 
 				float airOffset = -0.8;
 
 				if (airRadius > 32)
 					airOffset = -1.8;
 
-				int airStartX = floor((unitPositionX - airRadius) / 32.f + airOffset);
-				int airStartY = floor((unitPositionY - airRadius) / 32.f + airOffset);
+				int airStartX = static_cast<int>(floor((unitPositionX - airRadius) / 32.f + airOffset));
+				int airStartY = static_cast<int>(floor((unitPositionY - airRadius) / 32.f + airOffset));
 
-				int groundEndX = ceil((unitPositionX + groundRadius) / 32.f - groundOffset);
-				int groundEndY = ceil((unitPositionY + groundRadius) / 32.f - groundOffset);
+				int groundEndX = static_cast<int>(ceil((unitPositionX + groundRadius) / 32.f - groundOffset));
+				int groundEndY = static_cast<int>(ceil((unitPositionY + groundRadius) / 32.f - groundOffset));
 
-				int airEndX = ceil((unitPositionX + airRadius) / 32.f - airOffset);
-				int airEndY = ceil((unitPositionY + airRadius) / 32.f - airOffset);
+				int airEndX = static_cast<int>(ceil((unitPositionX + airRadius) / 32.f - airOffset));
+				int airEndY = static_cast<int>(ceil((unitPositionY + airRadius) / 32.f - airOffset));
 
 				//need to clamp
 				groundStartX = Math::Clamp(groundStartX, 0, mapWidth - 1);
@@ -2399,13 +2621,18 @@ void HoldAIModule::onFrame()
 							{
 								// make influence fall of with distance:
 								//float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
-								float dist = Math::Distance(Vector2(x * 32 + static_cast<int>(unitPositionX) % 32, y * 32 + static_cast<int>(unitPositionY) % 32), Vector2(X * 32 + 16, Y * 32 + 16));
-								//dist = fmod(x, 32.f);
-								dist /= 32.f;
-								if (dist <= 1.f)
-									dist = 1.f;
+								//float dist = Math::Distance(Vector2(x * 32 + static_cast<int>(unitPositionX) % 32, y * 32 + static_cast<int>(unitPositionY) % 32), Vector2(X * 32 + 16, Y * 32 + 16));
+								////dist = fmod(x, 32.f);
+								//dist /= 32.f;
+								//if (dist <= 1.f)
+								//	dist = 1.f;
 
-								opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+								//todo : set influences into walktile
+								HOLD::SetValues(opinfluenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								HOLD::SetValues(influenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::minus<short>());
+								HOLD::SetValues(tensionGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								//opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
 							}
 						}
 				}
@@ -2422,13 +2649,18 @@ void HoldAIModule::onFrame()
 							{
 								// make influence fall of with distance:
 								//float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
-								float dist = Math::Distance(Vector2(x * 32 + static_cast<int>(unitPositionX) % 32, y * 32 + static_cast<int>(unitPositionY) % 32), Vector2(X * 32 + 16, Y * 32 + 16));
-								//dist = fmod(x, 32.f);
-								dist /= 32.f;
-								if (dist <= 1.f)
-									dist = 1.f;
+								//float dist = Math::Distance(Vector2(x * 32 + static_cast<int>(unitPositionX) % 32, y * 32 + static_cast<int>(unitPositionY) % 32), Vector2(X * 32 + 16, Y * 32 + 16));
+								////dist = fmod(x, 32.f);
+								//dist /= 32.f;
+								//if (dist <= 1.f)
+								//	dist = 1.f;
 
-								opinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+								//todo : set influences into walktile
+								HOLD::SetValues(opinfluenceAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								HOLD::SetValues(influenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::minus<short>());
+								HOLD::SetValues(tensionAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								//opinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
 							}
 						}
 				}
@@ -2478,8 +2710,8 @@ void HoldAIModule::onFrame()
 			auto & Myinfluence = [](Unit u)
 			{
 				int x, y;
-				x = u->getPosition().x / 32;
-				y = u->getPosition().y / 32;
+				x = u->getPosition().x;// / 32;
+				y = u->getPosition().y;// / 32;
 				WeaponType groundWeapon = u->getType().groundWeapon();
 				WeaponType airWeapon = u->getType().airWeapon();
 				float groundRadius = static_cast<float>(u->getPlayer()->weaponMaxRange(groundWeapon));
@@ -2498,22 +2730,22 @@ void HoldAIModule::onFrame()
 
 				//offset = 0.2;
 
-				int groundStartX = floor((unitPositionX - groundRadius) / 32.f + groundOffset);
-				int groundStartY = floor((unitPositionY - groundRadius) / 32.f + groundOffset);
+				int groundStartX = static_cast<int>(floor((unitPositionX - groundRadius) / 32.f + groundOffset));
+				int groundStartY = static_cast<int>(floor((unitPositionY - groundRadius) / 32.f + groundOffset));
 
 				float airOffset = -0.8;
 
 				if (airRadius > 32)
 					airOffset = -1.8;
 
-				int airStartX = floor((unitPositionX - airRadius) / 32.f + airOffset);
-				int airStartY = floor((unitPositionY - airRadius) / 32.f + airOffset);
+				int airStartX = static_cast<int>(floor((unitPositionX - airRadius) / 32.f + airOffset));
+				int airStartY = static_cast<int>(floor((unitPositionY - airRadius) / 32.f + airOffset));
 
-				int groundEndX = ceil((unitPositionX + groundRadius) / 32.f - groundOffset);
-				int groundEndY = ceil((unitPositionY + groundRadius) / 32.f - groundOffset);
+				int groundEndX = static_cast<int>(ceil((unitPositionX + groundRadius) / 32.f - groundOffset));
+				int groundEndY = static_cast<int>(ceil((unitPositionY + groundRadius) / 32.f - groundOffset));
 
-				int airEndX = ceil((unitPositionX + airRadius) / 32.f - airOffset);
-				int airEndY = ceil((unitPositionY + airRadius) / 32.f - airOffset);
+				int airEndX = static_cast<int>(ceil((unitPositionX + airRadius) / 32.f - airOffset));
+				int airEndY = static_cast<int>(ceil((unitPositionY + airRadius) / 32.f - airOffset));
 
 				//need to clamp
 				groundStartX = Math::Clamp(groundStartX, 0, mapWidth - 1);
@@ -2539,13 +2771,19 @@ void HoldAIModule::onFrame()
 							{
 								// make influence fall of with distance:
 								//float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
-								float dist = Math::Distance(Vector2(x * 32 + static_cast<int>(unitPositionX) % 32, y * 32 + static_cast<int>(unitPositionY) % 32), Vector2(X * 32 + 16, Y * 32 + 16));
-								//dist = fmod(x, 32.f);
-								dist /= 32.f;
-								if (dist <= 1.f)
-									dist = 1.f;
+								//float dist = Math::Distance(Vector2(x * 32 + static_cast<int>(unitPositionX) % 32, y * 32 + static_cast<int>(unitPositionY) % 32), Vector2(X * 32 + 16, Y * 32 + 16));
+								////dist = fmod(x, 32.f);
+								//dist /= 32.f;
+								//if (dist <= 1.f)
+								//	dist = 1.f;
 
-								myinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+								//todo : set influences into walktile
+								//HOLD::SetValues(myinfluenceGround[Y * mapHeight + X], X, Y, x, y, damage);
+								HOLD::SetValues(influenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								HOLD::SetValues(tensionGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+
+								//myinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
 							}
 						}
 				}
@@ -2562,13 +2800,18 @@ void HoldAIModule::onFrame()
 							{
 								// make influence fall of with distance:
 								//float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
-								float dist = Math::Distance(Vector2(x * 32 + static_cast<int>(unitPositionX) % 32, y * 32 + static_cast<int>(unitPositionY) % 32), Vector2(X * 32 + 16, Y * 32 + 16));
-								//dist = fmod(x, 32.f);
-								dist /= 32.f;
-								if (dist <= 1.f)
-									dist = 1.f;
+								//float dist = Math::Distance(Vector2(x * 32 + static_cast<int>(unitPositionX) % 32, y * 32 + static_cast<int>(unitPositionY) % 32), Vector2(X * 32 + 16, Y * 32 + 16));
+								////dist = fmod(x, 32.f);
+								//dist /= 32.f;
+								//if (dist <= 1.f)
+								//	dist = 1.f;
 
-								myinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
+								//todo : set influences into walktile
+								//HOLD::SetValues(myinfluenceAir[Y * mapHeight + X], X, Y, x, y, damage);
+								HOLD::SetValues(influenceAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								HOLD::SetValues(tensionAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								//myinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
 							}
 						}
 				}
@@ -2951,6 +3194,8 @@ void HoldAIModule::onFrame()
 			BWAPI::Unit closestTarget = nullptr;
 			for (auto target : targets)
 			{
+				//todo : I think it should return false whenn the target is invisible, doesn't it?
+				// why hydra aimed hidden lurker?
 				if (target->canAttack(u, false, false, false))
 				{
 					int dist = target->getDistance(u);
@@ -3141,43 +3386,87 @@ void HoldAIModule::onFrame()
 		if (Broodwar->isReplay())
 			return;
 
+		
 		//influence
-		std::transform(myinfluenceGround.begin(), myinfluenceGround.end(), opinfluenceGround.begin(),
-			influenceGround.begin(), std::minus<short>());
+		/*std::transform(myinfluenceGround.begin(), myinfluenceGround.end(), opinfluenceGround.begin(),
+			influenceGround.begin(), std::minus<MyGrid>());
 
 		std::transform(myinfluenceAir.begin(), myinfluenceAir.end(), opinfluenceAir.begin(),
-			influenceAir.begin(), std::minus<short>());
+			influenceAir.begin(), std::minus<MyGrid>());
 
 
 		//tension
 		std::transform(myinfluenceGround.begin(), myinfluenceGround.end(), opinfluenceGround.begin(),
-			tensionGround.begin(), std::plus<short>());
+			tensionGround.begin(), std::plus<MyGrid>());
 
 		std::transform(myinfluenceAir.begin(), myinfluenceAir.end(), opinfluenceAir.begin(),
-			tensionAir.begin(), std::plus<short>());
+			tensionAir.begin(), std::plus<MyGrid>());
 
 
 		std::transform(tensionGround.begin(), tensionGround.end(), tensionAir.begin(),
-			tensionTotal.begin(), std::plus<short>());
+			tensionTotal.begin(), std::plus<MyGrid>());*/
 
 		//Vulnerability  
 		//Calculated as Tension map -Abs(Influence map)
 		//todo: how to apply abs?
 
 		std::transform(tensionGround.begin(), tensionGround.end(), influenceGround.begin(),
-			vulGround.begin(), [](auto &first, auto &second)->short
+			vulGround.begin(), [](MyGrid &first, MyGrid &second)->MyGrid
 		{
-			return first - abs(second);
+			return first - HOLD::abs(second);
 		});
 
 		std::transform(tensionAir.begin(), tensionAir.end(), influenceAir.begin(),
-			vulAir.begin(), [](auto& first, auto &second)->short
+			vulAir.begin(), [](MyGrid& first, MyGrid &second)->MyGrid
 		{
-			return first - abs(second);
+			return first - HOLD::abs(second);
 		});
 
 		std::transform(vulGround.begin(), vulGround.end(), vulAir.begin(),
-			vulTotal.begin(), std::plus<short>());
+			vulTotal.begin(), std::plus<MyGrid>());
+		
+		////todo : if all values in tileposition is same, then use optimized loop, will the lambda saves me?
+		////influence
+		//std::transform(myinfluenceGround.begin(), myinfluenceGround.end(), opinfluenceGround.begin(),
+		//	influenceGround.begin(), [](auto & first, auto & second)->MyGrid
+		//	{
+		//	return MyGrid{first - second};
+		//	}
+		//);
+
+		//std::transform(myinfluenceAir.begin(), myinfluenceAir.end(), opinfluenceAir.begin(),
+		//	influenceAir.begin(), std::minus<short>());
+
+
+		////tension
+		//std::transform(myinfluenceGround.begin(), myinfluenceGround.end(), opinfluenceGround.begin(),
+		//	tensionGround.begin(), std::plus<short>());
+
+		//std::transform(myinfluenceAir.begin(), myinfluenceAir.end(), opinfluenceAir.begin(),
+		//	tensionAir.begin(), std::plus<short>());
+
+
+		//std::transform(tensionGround.begin(), tensionGround.end(), tensionAir.begin(),
+		//	tensionTotal.begin(), std::plus<short>());
+
+		////Vulnerability  
+		////Calculated as Tension map -Abs(Influence map)
+		////todo: how to apply abs?
+
+		//std::transform(tensionGround.begin(), tensionGround.end(), influenceGround.begin(),
+		//	vulGround.begin(), [](auto &first, auto &second)->short
+		//{
+		//	return first - abs(second);
+		//});
+
+		//std::transform(tensionAir.begin(), tensionAir.end(), influenceAir.begin(),
+		//	vulAir.begin(), [](auto& first, auto &second)->short
+		//{
+		//	return first - abs(second);
+		//});
+
+		//std::transform(vulGround.begin(), vulGround.end(), vulAir.begin(),
+		//	vulTotal.begin(), std::plus<short>());
 
 
 
@@ -3435,7 +3724,7 @@ void HoldAIModule::onFrame()
 		//My Influence
 		BWAPI::Position scrPos = Broodwar->getScreenPosition();
 
-		auto DrawInfluenMap = [](auto & scrPos, auto & map, auto boxColor, auto txtColor)
+		auto DrawInfluenMap = [](auto & scrPos, std::vector<MyGrid> & map, auto boxColor, auto txtColor)
 		{
 			for (int y = scrPos.y / 32; y < (scrPos.y + 14 * 32) / 32 + 1 && y < Broodwar->mapHeight(); ++y)
 			{
@@ -3443,11 +3732,31 @@ void HoldAIModule::onFrame()
 				{
 					if (map[y * mapHeight + x] != 0)
 					{
-						Broodwar->drawBoxMap(x * 32, y * 32, x * 32 + 32, y * 32 + 32, boxColor);
-						Broodwar->drawTextMap(x * 32, y * 32, "%c%d", txtColor, map[y * mapHeight + x]);
+						if (map[y * mapHeight + x].IsAllSame())
+						{
+							Broodwar->setTextSize(Text::Size::Huge);
+							Broodwar->drawTextMap(x * 32, y * 32, " %c%d", txtColor, map[y * mapHeight + x].GetLeftTop());
+							Broodwar->drawBoxMap(x * 32, y * 32, x * 32 + 32, y * 32 + 32, boxColor);
+						}
+						else
+						{
+							Broodwar->setTextSize(Text::Size::Small);
+							Broodwar->drawTextMap(x * 32, y * 32, " %c%d", txtColor, map[y * mapHeight + x].GetLeftTop());
+							Broodwar->drawBoxMap(x * 32, y * 32, x * 32 + 16, y * 32 + 16, boxColor);
+
+							Broodwar->drawTextMap(x * 32 + 16, y * 32, " %c%d", txtColor, map[y * mapHeight + x].GetRightTop());
+							Broodwar->drawBoxMap(x * 32 + 16, y * 32, x * 32 + 32, y * 32 + 16, boxColor);
+
+							Broodwar->drawTextMap(x * 32, y * 32 + 16, " %c%d", txtColor, map[y * mapHeight + x].GetLeftBot());
+							Broodwar->drawBoxMap(x * 32, y * 32 + 16, x * 32 + 16, y * 32 + 32, boxColor);
+
+							Broodwar->drawTextMap(x * 32 + 16, y * 32 + 16, " %c%d", txtColor, map[y * mapHeight + x].GetRightTop());
+							Broodwar->drawBoxMap(x * 32 + 16, y * 32 + 16, x * 32 + 32, y * 32 + 32, boxColor);
+						}
 					}
 				}
 			}
+			Broodwar->setTextSize(Text::Size::Small);
 		};
 
 
@@ -3472,18 +3781,27 @@ void HoldAIModule::onFrame()
 		*/
 
 		// my influence - green
+		/*
 		if (Broodwar->getKeyState(Key::K_Q))
 			DrawInfluenMap(scrPos, myinfluenceGround, Colors::Green, Text::Green);
 
 		if (Broodwar->getKeyState(Key::K_A))
 			DrawInfluenMap(scrPos, myinfluenceAir, Colors::Green, Text::Green);
+			*/
+			// my influence - green
+			
+		if (Broodwar->getKeyState(Key::K_Q))
+			DrawInfluenMap(scrPos, influenceGround, Colors::Green, Text::Green);
 
+		if (Broodwar->getKeyState(Key::K_A))
+			DrawInfluenMap(scrPos, influenceAir, Colors::Green, Text::Green);
+			
 		// enemy influence - red
 		if (Broodwar->getKeyState(Key::K_W))
 			DrawInfluenMap(scrPos, opinfluenceGround, Colors::Red, Text::Red);
 
 		if (Broodwar->getKeyState(Key::K_S))
-			DrawInfluenMap(scrPos, opinfluenceGround, Colors::Red, Text::Red);
+			DrawInfluenMap(scrPos, opinfluenceAir, Colors::Red, Text::Red);
 
 		// tension map - purple
 		if (Broodwar->getKeyState(Key::K_E))
@@ -3585,7 +3903,7 @@ void HoldAIModule::onSendText(std::string text)
 	}
 	else if("all" == text)
 	{
-		drawAll != drawAll;
+		drawAll = !drawAll;
 		drawRange = drawBoundaries = drawDirection = drawGridMap = drawAll;
 	}
 	else if("cheat" == text)

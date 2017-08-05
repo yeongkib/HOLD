@@ -99,6 +99,8 @@ ipch/
 *.sln
 *.vcproj
 *.opendb
+*.db-shm
+*.db-wal
 
 # Guidance Automation Toolkit
 *.gpState
