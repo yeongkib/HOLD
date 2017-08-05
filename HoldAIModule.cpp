@@ -785,7 +785,37 @@ namespace HOLD
 	MyGrid abs(const MyGrid & grid)
 	{
 		return MyGrid{ static_cast<short>(std::abs(grid.quarter[0])), static_cast<short>(std::abs(grid.quarter[1])), static_cast<short>(std::abs(grid.quarter[2])), static_cast<short>(std::abs(grid.quarter[3])) };
-	}
+	};
+
+	short GetInfluenceValue(std::vector<MyGrid> & inf_map, int posX, int posY)
+	{
+		int x = posX % 32;
+		int y = posY % 32;
+
+		if (x < 16 && y < 16)
+			return inf_map[posY / 32 * mapHeight + posX / 32].GetLeftTop();
+		else if (x > 16 && y < 16)
+			return inf_map[posY / 32 * mapHeight + posX / 32].GetRightTop();
+		else if (x > 16 && y > 16)
+			return inf_map[posY / 32 * mapHeight + posX / 32].GetRightBot();
+		else// if (x < 16 && y > 16)
+			return inf_map[posY / 32 * mapHeight + posX / 32].GetLeftBot();
+	};
+
+	short GetInfluenceValue(std::vector<MyGrid> & inf_map, Position & pos)
+	{
+		int x = pos.x % 32;
+		int y = pos.y % 32;
+
+		if (x < 16 && y < 16)
+			return inf_map[pos.y / 32 * mapHeight + pos.x / 32].GetLeftTop();
+		else if (x > 16 && y < 16)
+			return inf_map[pos.y / 32 * mapHeight + pos.x / 32].GetRightTop();
+		else if (x > 16 && y > 16)
+			return inf_map[pos.y / 32 * mapHeight + pos.x / 32].GetRightBot();
+		else// if (x < 16 && y > 16)
+			return inf_map[pos.y / 32 * mapHeight + pos.x / 32].GetLeftBot();
+	};
 
 }//namespace HOLD
 
@@ -798,6 +828,13 @@ std::array<std::tuple<int, int, char>, 8> dirs =
 	std::make_tuple(-1, -1, 'UL'), std::make_tuple(0, -1, 'UM'), std::make_tuple(1, -1, 'UR'),
 	std::make_tuple(-1, 0, 'ML'),/*std::make_tuple(0, 0, 'MM'),*/std::make_tuple(1, 0, 'MR'),
 	std::make_tuple(-1, 1, 'BL'), std::make_tuple(0, 1, 'BM'), std::make_tuple(1, 1, 'BR')
+};
+
+std::array<std::tuple<int, int, char>, 8> walktTileOffsets =
+{
+	std::make_tuple(-8, -8, 'UL'), std::make_tuple(0, -8, 'UM'), std::make_tuple(8, -8, 'UR'),
+	std::make_tuple(-8, 0, 'ML'),/*std::make_tuple(0, 0, 'MM'),*/std::make_tuple(8, 0, 'MR'),
+	std::make_tuple(-8, 8, 'BL'), std::make_tuple(0, 8, 'BM'), std::make_tuple(8, 8, 'BR')
 };
 
 
@@ -824,9 +861,9 @@ BWAPI::Position Next()
  * 4. 
  */
 
-BWAPI::Position FindMostSafetyZone_Attack(std::vector<MyGrid> &inf_map, BWAPI::Position& pos, BWAPI::Position& dir, bool ground = false)
+BWAPI::Position FindMostSafetyZone_Attack(std::vector<MyGrid> &inf_map, BWAPI::Position pos, BWAPI::Position& dir, bool ground = false)
 {
-	std::vector<TilePosition> candidates;
+	std::vector<WalkPosition> candidates;
 
 	std::vector<bool> neighbor(8, false);
 
@@ -852,7 +889,6 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<MyGrid> &inf_map, BWAPI::P
 	* case 3 : x < 0 && y > 0
 	* -> include 3,5,6
 	*/
-
 	// I don't think pos will be equal to dir. Which means the unit and target at the same position
 	// but just in case...
 	if (dir.x <= 0 && dir.y <= 0)
@@ -871,7 +907,7 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<MyGrid> &inf_map, BWAPI::P
 	{
 		neighbor[3] = neighbor[5] = neighbor[6] = true;
 	}
-
+	
 	int lowest = (std::numeric_limits<int>::max)();
 	for (int i = 0; i < 8; ++i)
 	{
@@ -881,29 +917,32 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<MyGrid> &inf_map, BWAPI::P
 		int dx = std::get<0>(dirs[i]);
 		int dy = std::get<1>(dirs[i]);
 
-		TilePosition targetPosition{ pos.x / 32, pos.y / 32  };
+		//TilePosition targetTilePosition{ pos.x / 32, pos.y / 32 };
+		WalkPosition targetWalkPosition{pos.x / 8 + dx, pos.y / 8 + dy};
+		//targetPosition.x += dx;
+		//targetPosition.y += dy;
 
-		targetPosition.x += dx;
-		targetPosition.y += dy;
+		// set target tile position
+		//int influence = (std::numeric_limits<int>::max)();
+		
 
-		if (targetPosition.isValid())
+		if (targetWalkPosition.isValid())
 		{
-			/*if (ground)
-				if (!Broodwar->isWalkable(WalkPosition{ targetPosition.x * 4, targetPosition.y * 4 }))
-					continue;*/
+			if (ground)
+				if (!Broodwar->isWalkable(targetWalkPosition))
+					continue;
 
-			//todo : cal and get exact position
-			int influence = 0;// inf_map[targetPosition.y * mapHeight + targetPosition.x];
+			int influence = HOLD::GetInfluenceValue(inf_map, pos.x + std::get<0>(walktTileOffsets[i]), pos.y + std::get<1>(walktTileOffsets[i]));// inf_map[targetPosition.y * mapHeight + targetPosition.x];
 
 			if (influence < lowest)
 			{
-				std::vector<TilePosition>().swap(candidates);
-				candidates.push_back(targetPosition);
+				std::vector<WalkPosition>().swap(candidates);
+				candidates.push_back(targetWalkPosition);
 				lowest = influence;
 			}
 			else if (lowest == influence)
 			{
-				candidates.push_back(targetPosition);
+				candidates.push_back(targetWalkPosition);
 			}
 		}
 	}
@@ -914,10 +953,10 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<MyGrid> &inf_map, BWAPI::P
 		int closest = (std::numeric_limits<int>::max)();
 
 
-		for (TilePosition candidate : candidates)
+		for (WalkPosition candidate : candidates)
 		{
 			//not sure which function is better (getApproxDistance or getDistance)
-			Position target(candidate.x * 32+ pos.x % 32, candidate.y * 32 + pos.y % 32);
+			Position target(candidate.x * 8 + pos.x % 8, candidate.y * 8 + pos.y % 8);
 			int distance = pos.getApproxDistance(target);
 
 			if (distance < closest)
@@ -941,9 +980,9 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<MyGrid> &inf_map, BWAPI::P
 
 
 
-BWAPI::Position FindMostSafetyZone_Flee(std::vector<MyGrid> &inf_map, BWAPI::Position& pos, bool ground = false)
+BWAPI::Position FindMostSafetyZone_Flee(std::vector<MyGrid> &inf_map, BWAPI::Position pos, bool ground = false)
 {
-	std::vector<TilePosition> candidates;
+	std::vector<WalkPosition> candidates;
 
 
 	int lowest = (std::numeric_limits<int>::max)();
@@ -952,31 +991,32 @@ BWAPI::Position FindMostSafetyZone_Flee(std::vector<MyGrid> &inf_map, BWAPI::Pos
 		int dx = std::get<0>(dirs[i]);
 		int dy = std::get<1>(dirs[i]);
 
-		//TilePosition targetPosition{ (TilePosition)pos };
-		TilePosition targetPosition{ pos.x / 32, pos.y / 32 };
-		
+		//TilePosition targetTilePosition{ pos.x / 32, pos.y / 32 };
+		WalkPosition targetWalkPosition{ pos.x / 8 + dx, pos.y / 8 + dy };
+		//targetPosition.x += dx;
+		//targetPosition.y += dy;
 
-		targetPosition.x += dx;
-		targetPosition.y += dy;
+		// set target tile position
+		//int influence = (std::numeric_limits<int>::max)();
 
-		if (targetPosition.isValid())
+
+		if (targetWalkPosition.isValid())
 		{
-			/*if (ground)
-				if (!Broodwar->isWalkable(WalkPosition{ targetPosition.x * 4, targetPosition.y * 4 }))
-					continue;*/
+			if (ground)
+				if (!Broodwar->isWalkable(targetWalkPosition))
+					continue;
 
-			//todo : cal and get exact position
-			int influence = 0;// inf_map[targetPosition.y * mapHeight + targetPosition.x];
+			int influence = HOLD::GetInfluenceValue(inf_map, pos.x + std::get<0>(walktTileOffsets[i]), pos.y + std::get<1>(walktTileOffsets[i]));// inf_map[targetPosition.y * mapHeight + targetPosition.x];
 
 			if (influence < lowest)
 			{
-				std::vector<TilePosition>().swap(candidates);
-				candidates.push_back(targetPosition);
+				std::vector<WalkPosition>().swap(candidates);
+				candidates.push_back(targetWalkPosition);
 				lowest = influence;
 			}
 			else if (lowest == influence)
 			{
-				candidates.push_back(targetPosition);
+				candidates.push_back(targetWalkPosition);
 			}
 		}
 	}
@@ -986,10 +1026,11 @@ BWAPI::Position FindMostSafetyZone_Flee(std::vector<MyGrid> &inf_map, BWAPI::Pos
 		Position returnPosition{ pos };
 		int closest = (std::numeric_limits<int>::max)();
 
-		for (TilePosition candidate : candidates)
+
+		for (WalkPosition candidate : candidates)
 		{
 			//not sure which function is better (getApproxDistance or getDistance)
-			Position target{ candidate.x * 32 + pos.x % 32, candidate.y * 32 + pos.y % 32};
+			Position target(candidate.x * 8 + pos.x % 8, candidate.y * 8 + pos.y % 8);
 			int distance = pos.getApproxDistance(target);
 
 			if (distance < closest)
@@ -998,13 +1039,12 @@ BWAPI::Position FindMostSafetyZone_Flee(std::vector<MyGrid> &inf_map, BWAPI::Pos
 				returnPosition = target;
 			}
 		}
-		
 		BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
 		{
 			BWAPI::Broodwar->drawLineMap(pos, returnPosition, BWAPI::Colors::White);
 		},
 			[=](BWAPI::Game*) {return true; },  // condition
-			25);  // frames to run
+			15);  // frames to run
 		return returnPosition;
 	}
 	else
@@ -1013,7 +1053,7 @@ BWAPI::Position FindMostSafetyZone_Flee(std::vector<MyGrid> &inf_map, BWAPI::Pos
 			return pos;
 		//Broodwar->leaveGame();
 
-		//return Position{ candidates.at(0).x * 32, candidates.at(0).y * 32 };
+		//return Position{ candidates.at(0).x * 32 + pos.x % 32, candidates.at(0).y * 32 + pos.y % 32 };
 	}
 
 };
