@@ -176,9 +176,9 @@ struct MyGrid
 	bool MyGrid::operator!=(short value)
 	{
 		if (this->quarter[0] != value
-			&& this->quarter[1] != value
-			&& this->quarter[2] != value
-			&& this->quarter[3] != value)
+			|| this->quarter[1] != value
+			|| this->quarter[2] != value
+			|| this->quarter[3] != value)
 			return true;
 		return false;
 	}
@@ -255,21 +255,49 @@ namespace HOLD
 	std::array<Position, 4> Neighbours_Walk{ Position{ 8, 8 }, Position{ 24, 8 }, Position{ 8, 24 }, Position{ 24 ,24 }};
 
 
-	auto SetValues = [](MyGrid & cell, int targetpos_x, int targetpos_y, const int & curpos_x, const int & curpos_y, const int & damage, auto & op )
+	//todo: make sure the area is in the range
+	auto SetValues = [](MyGrid & cell, int targetpos_x, int targetpos_y, const int & curpos_x, const int & curpos_y, const int & damage, auto & op, auto & range )
 	{
 		/*
 		 * input : each cell, and curret position and target position
 		 * loop for each quarter
 		 */
 
-		auto CalInfluence = [](short & cell, int targetpos_x, int targetpos_y, const int & curpos_x, const int & curpos_y, const int & damage, auto & op)
+		auto CalInfluence = [](short & cell, int targetpos_x, int targetpos_y, const int & curpos_x, const int & curpos_y, const int & damage, auto & op, auto & range)
 		{
 			// make influence fall of with distance:
 			float dist = Math::Distance(Vector2(curpos_x, curpos_y), Vector2(targetpos_x, targetpos_y));
 			//dist = fmod(x, 32.f);
-			dist /= 32.f;
-			if (dist <= 1.f)
-				dist = 1.f;
+
+			//if (dist > static_cast<float>(range * 1.3))
+			//if(Position(curpos_x, curpos_y).getApproxDistance(Position(targetpos_x, targetpos_y)) > range * 1.1414f)
+			//	return;
+
+			int distinp = Position(curpos_x, curpos_y).getApproxDistance(Position(targetpos_x, targetpos_y));
+
+		/*	if (distinp >= range + 8)
+				return;*/
+
+			
+			if(distinp <= range + 8)
+			{
+				if (distinp <= range)
+				{
+					//Broodwar->drawTextMap(targetpos_x, targetpos_y, "%d", static_cast<int>( static_cast<float>(damage) / dist));
+
+					cell = op(cell, static_cast<short>(damage));
+					return;
+				}
+				//Broodwar->drawTextMap(targetpos_x, targetpos_y, "%2.0f", dist);
+
+				dist /= 32.f;
+				if (dist <= 1.f)
+					dist = 1.f;
+				cell = op(cell, static_cast<short>(static_cast<float>(damage) / dist));
+				return;
+			}
+
+
 
 			//todo : set influences into walktile
 			//opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
@@ -277,12 +305,12 @@ namespace HOLD
 
 			//todo : how to handle operator?? it can be minus and assign
 			//cell  static_cast<short>(static_cast<float>(damage) / dist);
-			cell = op(cell, static_cast<short>(static_cast<float>(damage) / dist));
+
 		};
 
 		for(char i = 0; i < 4; ++i)
 		{
-			CalInfluence(cell.GetQuarters()[i], targetpos_x * 32 + Neighbours_Walk[i].x, targetpos_y * 32 + Neighbours_Walk[i].y, curpos_x, curpos_y, damage, op);
+			CalInfluence(cell.GetQuarters()[i], targetpos_x * 32 + Neighbours_Walk[i].x + curpos_x % 4, targetpos_y * 32 + Neighbours_Walk[i].y + curpos_y % 4, curpos_x, curpos_y, damage, op, range);
 		}
 	};
 
@@ -2025,10 +2053,10 @@ void HoldAIModule::onStart()
 				/*if (starting.x == base.Location().x
 				&& starting.y == base.Location().y)*/
 				{
-					std::vector<BWEM::Ressource *> AssignedRessources(base.Minerals().begin(), base.Minerals().end());
-					//AssignedRessources.insert(AssignedRessources.end(), base.Geysers().begin(), base.Geysers().end());
+					std::vector<BWEM::Ressource *> AssignedResources(base.Minerals().begin(), base.Minerals().end());
+					//AssignedResources.insert(AssignedRessources.end(), base.Geysers().begin(), base.Geysers().end());
 
-					for (auto &mineral : AssignedRessources)
+					for (auto &mineral : AssignedResources)
 					{
 						distBtwMineral.push_back(std::make_pair<Position, float>(mineral->Pos(),
 							distance(float(base.Center().x) + float(BWAPI::UnitTypes::Terran_Command_Center.tileSize().x) * 0.5f,
@@ -2296,6 +2324,9 @@ void HoldAIModule::onFrame()
 			{*/
 			if (drawRange)
 			{
+				Broodwar->setTextSize(Text::Size::Huge);
+				Broodwar->drawTextMap(u->getPosition(), "\n\n\n\n%d", u->getType().groundWeapon().maxRange());
+				Broodwar->setTextSize(Text::Size::Small);
 				Broodwar->drawTextMap(u->getPosition(),
 					"%c#%d %s\n %.2f\n%d, %d\n%d", u->isAccelerating() ? Text::Grey : Text::Red, u->getID(), u->getOrder().c_str(), abs(u->getVelocityX()) + abs(u->getVelocityY()), u->getOrderTargetPosition().x, u->getOrderTargetPosition().y, u->getType().sightRange());// , Text::BrightRed, i->getGroundWeaponCooldown());
 
@@ -2503,13 +2534,13 @@ void HoldAIModule::onFrame()
 									//	dist = 1.f;
 
 									//todo : set influences into walktile
-									HOLD::SetValues(opinfluenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
-									HOLD::SetValues(opinfluenceAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
-									HOLD::SetValues(influenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::minus<short>());
-									HOLD::SetValues(influenceAir[Y * mapHeight + x], X, Y, x, y, damage, std::minus<short>());
-									HOLD::SetValues(tensionGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
-									HOLD::SetValues(tensionAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
-									HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage * 2, std::plus<short>());
+									HOLD::SetValues(opinfluenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), groundRadius);
+									HOLD::SetValues(opinfluenceAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), groundRadius);
+									HOLD::SetValues(influenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::minus<short>(), groundRadius);
+									HOLD::SetValues(influenceAir[Y * mapHeight + x], X, Y, x, y, damage, std::minus<short>(), groundRadius);
+									HOLD::SetValues(tensionGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), groundRadius);
+									HOLD::SetValues(tensionAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), groundRadius);
+									HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage * 2, std::plus<short>(), groundRadius);
 									//opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
 									//opinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
 
@@ -2620,6 +2651,8 @@ void HoldAIModule::onFrame()
 
 				//offset = 0.2;
 
+				//groundOffset = 0.f;
+
 				int groundStartX = static_cast<int>(floor((unitPositionX - groundRadius) / 32.f + groundOffset));
 				int groundStartY = static_cast<int>(floor((unitPositionY - groundRadius) / 32.f + groundOffset));
 
@@ -2627,6 +2660,8 @@ void HoldAIModule::onFrame()
 
 				if (airRadius > 32)
 					airOffset = -1.8;
+
+				//airOffset = 0.f;
 
 				int airStartX = static_cast<int>(floor((unitPositionX - airRadius) / 32.f + airOffset));
 				int airStartY = static_cast<int>(floor((unitPositionY - airRadius) / 32.f + airOffset));
@@ -2668,10 +2703,10 @@ void HoldAIModule::onFrame()
 								//	dist = 1.f;
 
 								//todo : set influences into walktile
-								HOLD::SetValues(opinfluenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
-								HOLD::SetValues(influenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::minus<short>());
-								HOLD::SetValues(tensionGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
-								HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								HOLD::SetValues(opinfluenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), groundRadius);
+								HOLD::SetValues(influenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::minus<short>(), groundRadius);
+								HOLD::SetValues(tensionGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), groundRadius);
+								HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), groundRadius);
 								//opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
 							}
 						}
@@ -2696,10 +2731,10 @@ void HoldAIModule::onFrame()
 								//	dist = 1.f;
 
 								//todo : set influences into walktile
-								HOLD::SetValues(opinfluenceAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
-								HOLD::SetValues(influenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::minus<short>());
-								HOLD::SetValues(tensionAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
-								HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								HOLD::SetValues(opinfluenceAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), airRadius);
+								HOLD::SetValues(influenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::minus<short>(), airRadius);
+								HOLD::SetValues(tensionAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), airRadius);
+								HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), airRadius);
 								//opinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
 							}
 						}
@@ -2768,6 +2803,8 @@ void HoldAIModule::onFrame()
 				if (groundRadius > 32)
 					groundOffset = -1.8;
 
+				//groundOffset = 0.f;
+
 				//offset = 0.2;
 
 				int groundStartX = static_cast<int>(floor((unitPositionX - groundRadius) / 32.f + groundOffset));
@@ -2777,6 +2814,8 @@ void HoldAIModule::onFrame()
 
 				if (airRadius > 32)
 					airOffset = -1.8;
+				
+				//airOffset = 0.f;
 
 				int airStartX = static_cast<int>(floor((unitPositionX - airRadius) / 32.f + airOffset));
 				int airStartY = static_cast<int>(floor((unitPositionY - airRadius) / 32.f + airOffset));
@@ -2819,9 +2858,9 @@ void HoldAIModule::onFrame()
 
 								//todo : set influences into walktile
 								//HOLD::SetValues(myinfluenceGround[Y * mapHeight + X], X, Y, x, y, damage);
-								HOLD::SetValues(influenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
-								HOLD::SetValues(tensionGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
-								HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								HOLD::SetValues(influenceGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), groundRadius);
+								HOLD::SetValues(tensionGround[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), groundRadius);
+								HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), groundRadius);
 
 								//myinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
 							}
@@ -2848,9 +2887,9 @@ void HoldAIModule::onFrame()
 
 								//todo : set influences into walktile
 								//HOLD::SetValues(myinfluenceAir[Y * mapHeight + X], X, Y, x, y, damage);
-								HOLD::SetValues(influenceAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
-								HOLD::SetValues(tensionAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
-								HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>());
+								HOLD::SetValues(influenceAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), airRadius);
+								HOLD::SetValues(tensionAir[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), airRadius);
+								HOLD::SetValues(tensionTotal[Y * mapHeight + X], X, Y, x, y, damage, std::plus<short>(), airRadius);
 								//myinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
 							}
 						}
@@ -2866,6 +2905,18 @@ void HoldAIModule::onFrame()
 			if(drawBoundaries)
 				HOLD::drawBoundary(u);
 
+			//todo : diagonalline for base
+			auto DrawDiagonalLineOfBase = [](auto & b)
+			{
+				Broodwar->drawLineMap(b->getLeft(), b->getTop(), b->getLeft() - 100, b->getTop() - 100, Colors::Teal);
+				Broodwar->drawLineMap(b->getRight(), b->getTop(), b->getRight() + 100, b->getTop() - 100, Colors::Teal);
+				Broodwar->drawLineMap(b->getLeft(), b->getBottom(), b->getLeft() - 100, b->getBottom() + 100, Colors::Teal);
+				Broodwar->drawLineMap(b->getRight(), b->getBottom(), b->getRight() + 100, b->getBottom() + 100, Colors::Teal);
+			};
+
+			if (u->getType().isResourceDepot())
+				DrawDiagonalLineOfBase(u);
+
 
 			// Finally make the unit do some stuff!
 
@@ -2875,6 +2926,16 @@ void HoldAIModule::onFrame()
 			// If the unit is a worker unit
 			if (u->getType().isWorker())
 			{
+				//if unit is on the line, call return to cargo, and set it as true
+				for (auto & base : UnitDataSets[Broodwar->self()][UnitTypes::Enum::Zerg_Hatchery].m_units)
+				{
+					double dx = static_cast<double>(abs(base->getRight() - u->getPosition().x));
+					double dy = static_cast<double>(abs(base->getBottom() - u->getPosition().y));
+
+					double ratio = dy / dx;
+
+					BWAPI::Broodwar->drawTextMap(u->getPosition(), "%f.2", ratio);
+				}
 				// if our worker is idle
 				if (u->isIdle())
 				{
@@ -2883,6 +2944,7 @@ void HoldAIModule::onFrame()
 					if (u->isCarryingGas() || u->isCarryingMinerals())
 					{
 						u->returnCargo();
+						u->setClientInfo(false, std::hash<std::string>{}(std::string("boost")));
 					}
 					else if (!u->getPowerUp())  // The worker cannot harvest anything if it
 					{                             // is carrying a powerup such as a flag
@@ -2895,6 +2957,43 @@ void HoldAIModule::onFrame()
 
 					} // closure: has no powerup
 				} // closure: if idle
+				  // if our worker is idle
+				
+				//if(u->isCarryingGas() || u->isCarryingMinerals())
+				/*
+				if (!u->getClientInfo(std::hash<std::string>{}(std::string("boost"))))
+				{
+					//if unit is on the line, call return to cargo, and set it as true
+					for( auto & base : UnitDataSets[Broodwar->self()][UnitTypes::Enum::Zerg_Hatchery].m_units )
+					{
+						double dx = static_cast<double>(abs(base->getPosition().x - u->getPosition().x));
+						double dy = static_cast<double>(abs(base->getPosition().y - u->getPosition().y));
+
+						double ratio = dy / dx;
+
+						BWAPI::Broodwar->drawTextMap(u->getPosition(), "%f.2", ratio);
+
+						//BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
+						//{
+						//	BWAPI::Broodwar->drawTextMap(u->getPosition(), "%f.2", ratio);
+						//},
+						//	[=](BWAPI::Game*) {return true; },  // condition
+						//	15);  // frames to run
+
+						if(ratio > 0.65
+							&& ratio < 0.85)
+						{
+							u->returnCargo();
+							u->setClientInfo(true, std::hash<std::string>{}(std::string("boost")));
+							BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
+							{
+								BWAPI::Broodwar->drawCircleMap(u->getPosition(), 3, BWAPI::Colors::White);
+							},
+								[=](BWAPI::Game*) {return true; },  // condition
+								15);  // frames to run
+						}
+					}
+				}*/
 
 			}
 			if (BWAPI::Broodwar->getFrameCount() % 50 == 0)
@@ -3218,11 +3317,6 @@ void HoldAIModule::onFrame()
 			//
 			//			}
 
-			//todo : diagonalline for base
-			/*auto DrawDiagonalLineOfBase = [](Unit & b)
-			{
-			Broodwar->drawLineMap(b->);
-			};*/
 			//todo : uncomment
 			Unitset targets;
 			if (u->isFlying())
@@ -3764,7 +3858,7 @@ void HoldAIModule::onFrame()
 		//My Influence
 		BWAPI::Position scrPos = Broodwar->getScreenPosition();
 
-		auto DrawInfluenMap = [](auto & scrPos, std::vector<MyGrid> & map, auto boxColor, auto txtColor)
+		auto DrawInfluenceMap = [](auto & scrPos, std::vector<MyGrid> & map, auto boxColor, auto txtColor)
 		{
 			for (int y = scrPos.y / 32; y < (scrPos.y + 14 * 32) / 32 + 1 && y < Broodwar->mapHeight(); ++y)
 			{
@@ -3781,17 +3875,30 @@ void HoldAIModule::onFrame()
 						else
 						{
 							Broodwar->setTextSize(Text::Size::Small);
-							Broodwar->drawTextMap(x * 32, y * 32, " %c%d", txtColor, map[y * mapHeight + x].GetLeftTop());
-							Broodwar->drawBoxMap(x * 32, y * 32, x * 32 + 16, y * 32 + 16, boxColor);
 
-							Broodwar->drawTextMap(x * 32 + 16, y * 32, " %c%d", txtColor, map[y * mapHeight + x].GetRightTop());
-							Broodwar->drawBoxMap(x * 32 + 16, y * 32, x * 32 + 32, y * 32 + 16, boxColor);
+							if (map[y * mapHeight + x].GetLeftTop() != 0)
+							{
+								Broodwar->drawTextMap(x * 32, y * 32, " %c%d", txtColor, map[y * mapHeight + x].GetLeftTop());
+								Broodwar->drawBoxMap(x * 32, y * 32, x * 32 + 16, y * 32 + 16, boxColor);
+							}
 
-							Broodwar->drawTextMap(x * 32, y * 32 + 16, " %c%d", txtColor, map[y * mapHeight + x].GetLeftBot());
-							Broodwar->drawBoxMap(x * 32, y * 32 + 16, x * 32 + 16, y * 32 + 32, boxColor);
+							if (map[y * mapHeight + x].GetRightTop() != 0)
+							{
+								Broodwar->drawTextMap(x * 32 + 16, y * 32, " %c%d", txtColor, map[y * mapHeight + x].GetRightTop());
+								Broodwar->drawBoxMap(x * 32 + 16, y * 32, x * 32 + 32, y * 32 + 16, boxColor);
+							}
 
-							Broodwar->drawTextMap(x * 32 + 16, y * 32 + 16, " %c%d", txtColor, map[y * mapHeight + x].GetRightTop());
-							Broodwar->drawBoxMap(x * 32 + 16, y * 32 + 16, x * 32 + 32, y * 32 + 32, boxColor);
+							if (map[y * mapHeight + x].GetLeftBot() != 0)
+							{
+								Broodwar->drawTextMap(x * 32, y * 32 + 16, " %c%d", txtColor, map[y * mapHeight + x].GetLeftBot());
+								Broodwar->drawBoxMap(x * 32, y * 32 + 16, x * 32 + 16, y * 32 + 32, boxColor);
+							}
+
+							if (map[y * mapHeight + x].GetRightBot() != 0)
+							{
+								Broodwar->drawTextMap(x * 32 + 16, y * 32 + 16, " %c%d", txtColor, map[y * mapHeight + x].GetRightBot());
+								Broodwar->drawBoxMap(x * 32 + 16, y * 32 + 16, x * 32 + 32, y * 32 + 32, boxColor);
+							}
 						}
 					}
 				}
@@ -3831,37 +3938,37 @@ void HoldAIModule::onFrame()
 			// my influence - green
 			
 		if (Broodwar->getKeyState(Key::K_Q))
-			DrawInfluenMap(scrPos, influenceGround, Colors::Green, Text::Green);
+			DrawInfluenceMap(scrPos, influenceGround, Colors::Green, Text::Green);
 
 		if (Broodwar->getKeyState(Key::K_A))
-			DrawInfluenMap(scrPos, influenceAir, Colors::Green, Text::Green);
+			DrawInfluenceMap(scrPos, influenceAir, Colors::Green, Text::Green);
 			
 		// enemy influence - red
 		if (Broodwar->getKeyState(Key::K_W))
-			DrawInfluenMap(scrPos, opinfluenceGround, Colors::Red, Text::Red);
+			DrawInfluenceMap(scrPos, opinfluenceGround, Colors::Red, Text::Red);
 
 		if (Broodwar->getKeyState(Key::K_S))
-			DrawInfluenMap(scrPos, opinfluenceAir, Colors::Red, Text::Red);
+			DrawInfluenceMap(scrPos, opinfluenceAir, Colors::Red, Text::Red);
 
 		// tension map - purple
 		if (Broodwar->getKeyState(Key::K_E))
-			DrawInfluenMap(scrPos, tensionTotal, Colors::Purple, Text::Purple);
+			DrawInfluenceMap(scrPos, tensionTotal, Colors::Purple, Text::Purple);
 
 		if (Broodwar->getKeyState(Key::K_D))
-			DrawInfluenMap(scrPos, tensionGround, Colors::Purple, Text::Purple);
+			DrawInfluenceMap(scrPos, tensionGround, Colors::Purple, Text::Purple);
 
 		if (Broodwar->getKeyState(Key::K_C))
-			DrawInfluenMap(scrPos, tensionAir, Colors::Purple, Text::Purple);
+			DrawInfluenceMap(scrPos, tensionAir, Colors::Purple, Text::Purple);
 
 		// vulnerability map - white
 		if (Broodwar->getKeyState(Key::K_R))
-			DrawInfluenMap(scrPos, vulTotal, Colors::White, Text::White);
+			DrawInfluenceMap(scrPos, vulTotal, Colors::White, Text::White);
 
 		if (Broodwar->getKeyState(Key::K_F))
-			DrawInfluenMap(scrPos, vulGround, Colors::White, Text::White);
+			DrawInfluenceMap(scrPos, vulGround, Colors::White, Text::White);
 
 		if (Broodwar->getKeyState(Key::K_V))
-			DrawInfluenMap(scrPos, vulAir, Colors::White, Text::White);
+			DrawInfluenceMap(scrPos, vulAir, Colors::White, Text::White);
 
 
 		/*Broodwar->setTextSize(Text::Size::Small);
