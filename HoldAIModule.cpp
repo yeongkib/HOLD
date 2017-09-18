@@ -119,13 +119,13 @@ BWAPI::Position FindMostSafetyZone_Attack(std::vector<Grid> &inf_map, BWAPI::Pos
 	std::vector<bool> neighbor(8, false);
 
 	/*
-	*  忙式式成式式忖     忙式成式成式忖
-	*  弛 0弛 1弛     弛0弛1弛2弛
-	*  弛  弛  弛	   戍式托式托式扣
-	*  戍式式托式式扣	-> 弛3弛 弛4弛
-	*  弛 3弛 2弛	   戍式托式托式扣
-	*  弛  弛  弛	   戍5弛6弛7弛
-	*  戌式式扛式式戎	   戌式扛式扛式戎
+	*  +--+--+     +-+-+-+
+	*  | 0| 1|     |0|1|2|
+	*  |  |  |	   +-+-+-+
+	*  +--+--+	-> |3| |4|
+	*  | 2| 3|	   +-+-+-+
+	*  |  |  |	   |5|6|7|
+	*  +--+--+	   +-+-+-+
 	*
 	*
 	* case 0 : x < 0 && y < 0
@@ -510,7 +510,7 @@ void HoldAIModule::onStart()
 
 
 
-		for (const auto & u : Broodwar->self()->getUnits())
+		for (Unit u : Broodwar->self()->getUnits())
 		{
 			int type = u->getType();
 			// just skip this for now
@@ -1659,38 +1659,71 @@ void HoldAIModule::onFrame()
 		*/
 		// my influence - green
 
+		//if (Broodwar->getKeyState(Key::K_Q))
+		//	DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "influenceGround" }), Colors::Green, Text::Green);
+
+		//if (Broodwar->getKeyState(Key::K_A))
+		//	DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "influenceAir" }), Colors::Green, Text::Green);
+
+		//// enemy influence - red
+		//if (Broodwar->getKeyState(Key::K_W))
+		//	DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "opinfluenceGround" }), Colors::Red, Text::Red);
+
+		//if (Broodwar->getKeyState(Key::K_S))
+		//	DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "opinfluenceAir" }), Colors::Red, Text::Red);
+
+		//// tension map - purple
+		//if (Broodwar->getKeyState(Key::K_E))
+		//	DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "tensionTotal" }), Colors::Purple, Text::Purple);
+
+		//if (Broodwar->getKeyState(Key::K_D))
+		//	DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "tensionGround" }), Colors::Purple, Text::Purple);
+
+		//if (Broodwar->getKeyState(Key::K_C))
+		//	DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "tensionAir" }), Colors::Purple, Text::Purple);
+
+		//// vulnerability map - white
+		//if (Broodwar->getKeyState(Key::K_R))
+		//	DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "vulTotal" }), Colors::White, Text::White);
+
+		//if (Broodwar->getKeyState(Key::K_F))
+		//	DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "vulGround" }), Colors::White, Text::White);
+
+		//if (Broodwar->getKeyState(Key::K_V))
+		//	DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "vulAir" }), Colors::White, Text::White);
+
 		if (Broodwar->getKeyState(Key::K_Q))
-			DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "influenceGround" }), Colors::Green, Text::Green);
+			DrawInfluenceMap(scrPos, HQ->GetCommand<IntelligenceCommand>()->influenceGround, Colors::Green, Text::Green);
 
 		if (Broodwar->getKeyState(Key::K_A))
-			DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "influenceAir" }), Colors::Green, Text::Green);
+			DrawInfluenceMap(scrPos, HQ->GetCommand<IntelligenceCommand>()->influenceAir, Colors::Green, Text::Green);
 
 		// enemy influence - red
 		if (Broodwar->getKeyState(Key::K_W))
-			DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "opinfluenceGround" }), Colors::Red, Text::Red);
+			DrawInfluenceMap(scrPos, HQ->GetCommand<IntelligenceCommand>()->opinfluenceGround, Colors::Red, Text::Red);
 
 		if (Broodwar->getKeyState(Key::K_S))
-			DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "opinfluenceAir" }), Colors::Red, Text::Red);
+			DrawInfluenceMap(scrPos, HQ->GetCommand<IntelligenceCommand>()->opinfluenceAir, Colors::Red, Text::Red);
 
 		// tension map - purple
 		if (Broodwar->getKeyState(Key::K_E))
-			DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "tensionTotal" }), Colors::Purple, Text::Purple);
+			DrawInfluenceMap(scrPos, HQ->GetCommand<IntelligenceCommand>()->tensionTotal, Colors::Purple, Text::Purple);
 
 		if (Broodwar->getKeyState(Key::K_D))
-			DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "tensionGround" }), Colors::Purple, Text::Purple);
+			DrawInfluenceMap(scrPos, HQ->GetCommand<IntelligenceCommand>()->tensionGround, Colors::Purple, Text::Purple);
 
 		if (Broodwar->getKeyState(Key::K_C))
-			DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "tensionAir" }), Colors::Purple, Text::Purple);
+			DrawInfluenceMap(scrPos, HQ->GetCommand<IntelligenceCommand>()->tensionAir, Colors::Purple, Text::Purple);
 
 		// vulnerability map - white
 		if (Broodwar->getKeyState(Key::K_R))
-			DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "vulTotal" }), Colors::White, Text::White);
+			DrawInfluenceMap(scrPos, HQ->GetCommand<IntelligenceCommand>()->vulTotal, Colors::White, Text::White);
 
 		if (Broodwar->getKeyState(Key::K_F))
-			DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "vulGround" }), Colors::White, Text::White);
+			DrawInfluenceMap(scrPos, HQ->GetCommand<IntelligenceCommand>()->vulGround, Colors::White, Text::White);
 
 		if (Broodwar->getKeyState(Key::K_V))
-			DrawInfluenceMap(scrPos, *HQ->GetCommand<IntelligenceCommand>()->GetGridMap(std::string{ "vulAir" }), Colors::White, Text::White);
+			DrawInfluenceMap(scrPos, HQ->GetCommand<IntelligenceCommand>()->vulAir, Colors::White, Text::White);
 
 
 		/*Broodwar->setTextSize(Text::Size::Small);
@@ -2021,6 +2054,8 @@ void HoldAIModule::onUnitDestroy(BWAPI::Unit unit)
 		UnitType unitType = unit->getType();
 		if (unit->getType().isMineralField()) theMap.OnMineralDestroyed(unit);
 		else if (unit->getType().isSpecialBuilding()) theMap.OnStaticBuildingDestroyed(unit);
+
+		HQ->GetCommand<IntelligenceCommand>()->OnUnitDestroy(unit);
 
 		/*Unitset tobedeleted;
 		tobedeleted.insert(unit);
