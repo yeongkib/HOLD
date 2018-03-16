@@ -1,6 +1,6 @@
 /*****************************************************************************/
 /*!
-\file   Command.hpp
+\file   Message.hpp
 \author Yeongki Baek
 \par    email: yeongki.baek\@digipen.edu
 \date   08/01/2017
@@ -10,22 +10,20 @@ Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
 #pragma once
-
-#include "Message.hpp"
-
 namespace HOLD
 {
-	class Command
+	namespace MsgId
+	{
+		enum MessageType {
+			NONE,
+			TOTAL_TYPE
+		};
+	}//namespace MsgId
+	class Message
 	{
 	public:
-		virtual ~Command() {}
-		virtual void Init() = 0;
-		virtual void Update(int dt) = 0;
-		virtual void Shutdown() = 0;
-		virtual void ProcessMessage(Message* message) = 0;
-		virtual void OnUnitMorph(Unit unit) = 0;
-		virtual void OnUnitCreate(Unit unit) = 0;
-		virtual void OnUnitShow(Unit unit) = 0;
-		virtual void OnUnitDestroy(Unit unit) = 0;
+		Message(MsgId::MessageType id) : MessageId(id) {};
+		MsgId::MessageType MessageId;
+		virtual ~Message() {};
 	};
 }//namespace HOLD

@@ -3,7 +3,6 @@
 \file   LogisticsCommand.hpp
 \author Yeongki Baek
 \par    email: yeongki.baek\@digipen.edu
-\par    GAM400
 \date   08/01/2017
 \brief
 This is the interface file for the module
@@ -22,6 +21,14 @@ namespace HOLD
 	//forward
 	class Message;
 	struct UnitDataSet;
+
+
+	enum Strategy
+	{
+		pool4 = 0,
+		pool5 = 0,
+		pool12
+	};
 		
 	class LogisticsCommand : public Command
 	{
@@ -36,7 +43,11 @@ namespace HOLD
 
 
 		void BroadcastMessage(Message* message);
-		void InitStrategyVsZ();
+		
+		
+		void InitStrategyVs12pool();
+
+		void InitStrategyVsZ(); // 5drone
 		void InitStrategyVsP();
 		void InitStrategyVsT();
 
@@ -59,6 +70,9 @@ namespace HOLD
 		void OnUnitShow(Unit unit) override;
 		void OnUnitDestroy(Unit unit) override;
 
+
+		Strategy strat;
+
 	private:
 
 		std::deque<UnitCommand> buildorder;
@@ -67,7 +81,8 @@ namespace HOLD
 		int GenerateID();
 
 
-		std::unordered_map< BWAPI::Player, std::unordered_map< int, HOLD::UnitDataSet > >* UnitDataSets;
+		//std::unordered_map< BWAPI::Player, std::unordered_map< int, HOLD::UnitDataSet > >* UnitDataSets;
+		std::unordered_map< BWAPI::Player, std::unordered_map< int, UnitInfoset > >* Units;
 
 		int currentOrderNum = 1;
 

@@ -3,7 +3,6 @@
 \file   Grid.hpp
 \author Yeongki Baek
 \par    email: yeongki.baek\@digipen.edu
-\par    GAM400
 \date   08/01/2017
 \brief
 This is the interface file for the module

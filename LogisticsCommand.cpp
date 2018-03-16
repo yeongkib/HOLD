@@ -3,7 +3,6 @@
 \file   LogisticsCommand.cpp
 \author Yeongki Baek
 \par    email: yeongki.baek\@digipen.edu
-\par    GAM400
 \date   08/01/2017
 \brief
 This is the interface file for the module
@@ -26,7 +25,7 @@ using namespace Filter;
 
 namespace HOLD
 {
-	LogisticsCommand::LogisticsCommand() : m_idStack(0)
+	LogisticsCommand::LogisticsCommand() : m_idStack(0), currentOrderNum(0)
 	{
 	}
 
@@ -37,18 +36,27 @@ namespace HOLD
 
 	void LogisticsCommand::Init()
 	{
-		UnitDataSets = HeadQuarters::GetInstance()->GetCommand<IntelligenceCommand>()->GetUnitDataSets();
+		Units = HeadQuarters::GetInstance()->GetCommand<IntelligenceCommand>()->GetUnitDataSets();
 
 
 		//todo : get enemy's race if possible
-		if(true)
-			InitStrategyVsZ();
+		if (Broodwar->enemy())
+		{
+			if (Broodwar->enemy()->getRace() == Races::Zerg)
+				InitStrategyVsZ();
 
-		else if(false)
-			InitStrategyVsP();
-		else if(false)
-			InitStrategyVsT();
+			else if (Broodwar->enemy()->getRace() == Races::Protoss)
+				InitStrategyVs12pool();
+				//InitStrategyVsP();
 
+			else if (Broodwar->enemy()->getRace() == Races::Terran)
+				InitStrategyVsT();
+
+			else //if(==unknown)
+			{
+				InitStrategyVsT();
+			}
+		}
 	}
 
 
@@ -56,6 +64,31 @@ namespace HOLD
 	{
 
 		GetNextOrder();
+
+		switch (buildorder.front().getType())
+		{
+		case UnitCommandTypes::Build:
+		case UnitCommandTypes::Morph:
+		Broodwar->drawTextScreen(5, 0, "current: %d - %s", currentOrderNum, buildorder.front().getUnitType().c_str());
+		Broodwar->drawTextScreen(5, 10, "Mineral : %d ", buildorder.front().getUnitType().mineralPrice());
+		Broodwar->drawTextScreen(5, 20, "Gas : %d ", buildorder.front().getUnitType().gasPrice());
+		Broodwar->drawTextScreen(5, 30, "Supply : %d ", buildorder.front().getUnitType().supplyRequired());
+		break;
+		case UnitCommandTypes::Upgrade:
+		Broodwar->drawTextScreen(5, 0, "current: %d - %s", currentOrderNum, buildorder.front().getUpgradeType().c_str());
+		Broodwar->drawTextScreen(5, 10, "Mineral : %d ", buildorder.front().getUpgradeType().mineralPrice());
+		Broodwar->drawTextScreen(5, 20, "Gas : %d ", buildorder.front().getUpgradeType().gasPrice());
+		break;
+		case UnitCommandTypes::Research:
+		Broodwar->drawTextScreen(5, 0, "current: %d - %s", currentOrderNum, buildorder.front().getTechType().c_str());
+		Broodwar->drawTextScreen(5, 10, "Mineral : %d ", buildorder.front().getTechType().mineralPrice());
+		Broodwar->drawTextScreen(5, 20, "Gas : %d ", buildorder.front().getTechType().gasPrice());
+		break;
+		}
+
+		Broodwar->drawTextScreen(150, 10, "reservedMineal : %d ", reservedMineral);
+		Broodwar->drawTextScreen(150, 20, "Gas : %d ", reservedGas);
+		Broodwar->drawTextScreen(150, 30, "Supply : %d ", reservedSupply);
 
 		//fix drone to unknown : when it build extractor...
 	}
@@ -73,8 +106,9 @@ namespace HOLD
 	{
 	}
 
-	void LogisticsCommand::InitStrategyVsZ()
+	void LogisticsCommand::InitStrategyVs12pool()
 	{
+		strat = pool12;
 		AddOrder(UnitTypes::Zerg_Drone, 5);
 		AddOrder(UnitTypes::Zerg_Overlord);
 		AddOrder(UnitTypes::Zerg_Drone, 3);
@@ -110,14 +144,50 @@ namespace HOLD
 		AddOrder(UnitTypes::Zerg_Hydralisk, 3);
 	}
 
+	void LogisticsCommand::InitStrategyVsZ()
+	{
+		strat = pool5;
+		AddOrder(UnitTypes::Zerg_Drone, 1);
+		AddOrder(UnitTypes::Zerg_Spawning_Pool);
+		AddOrder(UnitTypes::Zerg_Drone, 2);
+		AddOrder(UnitTypes::Zerg_Zergling, 3);
+		AddOrder(UnitTypes::Zerg_Overlord);
+		AddOrder(UnitTypes::Zerg_Zergling, 3);
+		AddOrder(UnitTypes::Zerg_Overlord);
+		AddOrder(UnitTypes::Zerg_Overlord, 3);
+		AddOrder(UnitTypes::Zerg_Zergling, 3);
+	}
+
 	void LogisticsCommand::InitStrategyVsP()
 	{
-		
+		strat = pool5;
+		AddOrder(UnitTypes::Zerg_Drone, 1);
+		AddOrder(UnitTypes::Zerg_Spawning_Pool);
+		AddOrder(UnitTypes::Zerg_Drone, 2);
+		AddOrder(UnitTypes::Zerg_Zergling, 3);
+		//add gas trick function
+		//AddOrder(UnitTypes::Zerg_Zergling, bool ) // when we do gas trick, it should do it for only one unit
+		AddOrder(UnitTypes::Zerg_Overlord);
+		AddOrder(UnitTypes::Zerg_Zergling, 3);
+		AddOrder(UnitTypes::Zerg_Overlord);
+		AddOrder(UnitTypes::Zerg_Zergling, 3);
+		AddOrder(UnitTypes::Zerg_Overlord, 3);
+		AddOrder(UnitTypes::Zerg_Zergling, 3);
 	}
 
 	void LogisticsCommand::InitStrategyVsT()
 	{
-		
+		strat = pool4;
+		AddOrder(UnitTypes::Zerg_Drone, 1);
+		AddOrder(UnitTypes::Zerg_Spawning_Pool);
+		AddOrder(UnitTypes::Zerg_Drone, 1);
+		AddOrder(UnitTypes::Zerg_Zergling, 3);
+		AddOrder(UnitTypes::Zerg_Overlord);
+		AddOrder(UnitTypes::Zerg_Zergling, 3);
+		AddOrder(UnitTypes::Zerg_Overlord);
+		AddOrder(UnitTypes::Zerg_Zergling, 3);
+		AddOrder(UnitTypes::Zerg_Overlord, 3);
+		AddOrder(UnitTypes::Zerg_Zergling, 3);
 	}
 
 	bool LogisticsCommand::Build(UnitCommand & mt)
@@ -130,7 +200,7 @@ namespace HOLD
 			if (mt.getUnitType() <= UnitTypes::Enum::Zerg_Lurker) // it's unit
 			{
 				//if (!MyUnitSets[BWAPI::UnitTypes::Enum::Zerg_Larva].m_units.empty())
-				if (!(*UnitDataSets)[Broodwar->self()][UnitTypes::Enum::Zerg_Larva].m_units.empty())
+				if (!(*Units)[Broodwar->self()][UnitTypes::Enum::Zerg_Larva].empty())
 				{
 					int minerals = BWAPI::Broodwar->self()->minerals();
 					int requireMin = buildorder.front().getUnitType().mineralPrice();//mt.unitType.mineralPrice();
@@ -147,8 +217,8 @@ namespace HOLD
 						&& supply >= requireSupply)
 					{
 						//if ((*MyUnitSets[BWAPI::UnitTypes::Enum::Zerg_Larva].m_units.begin())->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType())))
-						if (!(*UnitDataSets)[Broodwar->self()][UnitTypes::Enum::Zerg_Larva].m_units.empty())
-							if ((*(*UnitDataSets)[Broodwar->self()][UnitTypes::Enum::Zerg_Larva].m_units.begin())->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType())))
+						if (!(*Units)[Broodwar->self()][UnitTypes::Enum::Zerg_Larva].empty())
+							if ((*(*Units)[Broodwar->self()][UnitTypes::Enum::Zerg_Larva].begin())->m_unit->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType())))
 							{
 								/*reservedMineral -= requireMin;
 								reservedGas -= requireGas;
@@ -174,7 +244,7 @@ namespace HOLD
 			else if (UnitTypes::Enum::Zerg_Hatchery <= mt.getUnitType()
 				&& mt.getUnitType() <= UnitTypes::Enum::Zerg_Extractor) // it's building
 			{
-				if ((*UnitDataSets)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].m_units.empty())
+				if ((*Units)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].empty())
 					return false;
 
 				int minerals = BWAPI::Broodwar->self()->minerals();
@@ -191,7 +261,7 @@ namespace HOLD
 
 						//for (auto & worker : MyUnitSets[BWAPI::UnitTypes::Zerg_Drone].m_units)
 						//BWAPI::Unit supplyBuilder = *MyUnitSets[BWAPI::UnitTypes::Zerg_Drone].m_units.begin();
-						BWAPI::Unit supplyBuilder = *(*UnitDataSets)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].m_units.begin();
+						UnitInfo* supplyBuilder = *(*Units)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].begin();
 						{
 							// Retrieve a unit that is capable of constructing the supply needed
 							/*BWAPI::Unit supplyBuilder = (worker)->getClosestUnit(BWAPI::Filter::GetType == mt.unitType.whatBuilds().first &&
@@ -200,7 +270,7 @@ namespace HOLD
 							// If a unit was found
 							if (supplyBuilder)
 							{
-								if ((*UnitDataSets)[Broodwar->self()][UnitTypes::Enum::Zerg_Hatchery].m_units.size() < 2)
+								if ((*Units)[Broodwar->self()][UnitTypes::Enum::Zerg_Hatchery].size() < 2)
 								{
 									//const BWEM::Area * startBase = theMap.GetArea(Broodwar->self()->getStartLocation());
 									TilePosition starting = Broodwar->self()->getStartLocation();
@@ -245,21 +315,21 @@ namespace HOLD
 									if (targetBuildLocation != TilePositions::Invalid)
 									{
 										if (!Broodwar->isExplored(targetBuildLocation.x, targetBuildLocation.y))
-											supplyBuilder->issueCommand(BWAPI::UnitCommand::move(nullptr, Position(targetBuildLocation)));
+											supplyBuilder->m_unit->issueCommand(BWAPI::UnitCommand::move(nullptr, Position(targetBuildLocation)));
 
-										// Register an event that draws the target build location
-										BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
-										{
-											BWAPI::Broodwar->drawBoxMap(BWAPI::Position(targetBuildLocation),
-												BWAPI::Position(targetBuildLocation + mt.getUnitType().tileSize()),
-												BWAPI::Colors::Blue);
-										},
-											[=](BWAPI::Game*) {return true; },  // condition
-											mt.getUnitType().buildTime() + 500);  // frames to run
+										//// Register an event that draws the target build location
+										//BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
+										//{
+										//	BWAPI::Broodwar->drawBoxMap(BWAPI::Position(targetBuildLocation),
+										//		BWAPI::Position(targetBuildLocation + mt.getUnitType().tileSize()),
+										//		BWAPI::Colors::Blue);
+										//},
+										//	[=](BWAPI::Game*) {return true; },  // condition
+										//	mt.getUnitType().buildTime() + 500);  // frames to run
 										BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
 										{
 											bool result = false;
-											result = supplyBuilder->build(mt.getUnitType(), targetBuildLocation);
+											result = supplyBuilder->m_unit->build(mt.getUnitType(), targetBuildLocation);
 											/*if (result == true)
 											{
 											reservedMineral -= mt.getUnitType().mineralPrice();
@@ -268,7 +338,7 @@ namespace HOLD
 
 											return result;
 										},
-											[=](BWAPI::Game*) {return !supplyBuilder->isConstructing() || !supplyBuilder->isMoving() || !supplyBuilder->getType().isWorker(); },  // condition
+											[=](BWAPI::Game*) {return !supplyBuilder->m_unit->isConstructing() || !supplyBuilder->m_unit->isMoving() || !supplyBuilder->m_unit->getType().isWorker(); },  // condition
 											mt.getUnitType().buildTime() + 500,
 											50);  // frames to run
 
@@ -278,22 +348,22 @@ namespace HOLD
 								}
 								else
 								{
-									BWAPI::TilePosition targetBuildLocation = BWAPI::Broodwar->getBuildLocation(mt.getUnitType(), supplyBuilder->getTilePosition(), 256);
+									BWAPI::TilePosition targetBuildLocation = BWAPI::Broodwar->getBuildLocation(mt.getUnitType(), supplyBuilder->m_unit->getTilePosition(), 256);
 									if (targetBuildLocation != TilePositions::Invalid)
 									{
 										// Register an event that draws the target build location
-										BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
-										{
-											BWAPI::Broodwar->drawBoxMap(BWAPI::Position(targetBuildLocation),
-												BWAPI::Position(targetBuildLocation + mt.getUnitType().tileSize()),
-												BWAPI::Colors::Blue);
-										},
-											[=](BWAPI::Game*) {return (*UnitDataSets)[Broodwar->self()][mt.getUnitType()].m_units.empty(); },  // condition
-											mt.getUnitType().buildTime() + 100);  // frames to run
+										//BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
+										//{
+										//	BWAPI::Broodwar->drawBoxMap(BWAPI::Position(targetBuildLocation),
+										//		BWAPI::Position(targetBuildLocation + mt.getUnitType().tileSize()),
+										//		BWAPI::Colors::Blue);
+										//},
+										//	[=](BWAPI::Game*) {return (*Units)[Broodwar->self()][mt.getUnitType()].empty(); },  // condition
+										//	mt.getUnitType().buildTime() + 100);  // frames to run
 
 																				  // Order the builder to construct the supply structure
 
-										bool result = supplyBuilder->build(mt.getUnitType(), targetBuildLocation);
+										bool result = supplyBuilder->m_unit->build(mt.getUnitType(), targetBuildLocation);
 										if (result == true)
 										{
 											/*reservedMineral -= mt.getUnitType().mineralPrice();
@@ -328,12 +398,12 @@ namespace HOLD
 
 					if (UnitTypes::Enum::Zerg_Extractor == mt.getUnitType())
 					{
-						if ((*UnitDataSets)[Broodwar->self()][UnitTypes::Enum::Zerg_Extractor].m_units.size() == 1)
+						if ((*Units)[Broodwar->self()][UnitTypes::Enum::Zerg_Extractor].size() == 1)
 						{
 							auto starting = theMap.GetArea(Broodwar->self()->getStartLocation());
-							for (auto base : (*UnitDataSets)[Broodwar->self()][UnitTypes::Enum::Zerg_Hatchery].m_units)
+							for (auto base : (*Units)[Broodwar->self()][UnitTypes::Enum::Zerg_Hatchery])
 							{
-								auto currentBase = theMap.GetArea(base->getTilePosition());
+								auto currentBase = theMap.GetArea(base->m_unit->getTilePosition());
 								if (starting != currentBase)
 								{
 									for (auto gas : currentBase->Geysers())
@@ -363,18 +433,18 @@ namespace HOLD
 					if (mt.getUnitType() == BWAPI::UnitTypes::Enum::Zerg_Lair)
 					{
 						bool result = false;
-						for (Unit hatchery : (*UnitDataSets)[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Hatchery].m_units)
+						for (UnitInfo* hatchery : (*Units)[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Hatchery])
 							//auto & hatchery = *MyUnitSets[BWAPI::UnitTypes::Enum::Zerg_Hatchery].m_units.begin();
 						{
 							//if (hatchery->getClientInfo<bool>('1st'))
-								if(hatchery->getTilePosition() == Broodwar->self()->getStartLocation())
-								if (!hatchery->isMorphing())
+								if(hatchery->m_unit->getTilePosition() == Broodwar->self()->getStartLocation())
+								if (!hatchery->m_unit->isMorphing())
 								{
-									result = hatchery->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType()));
+									result = hatchery->m_unit->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType()));
 
 									if (result)
 									{
-										(*UnitDataSets)[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Hatchery].m_units.erase(hatchery);
+										(*Units)[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Hatchery].erase(hatchery);
 										/*reservedMineral -= requireMin;
 										reservedGas -= requireGas;*/
 										return true;
@@ -385,16 +455,16 @@ namespace HOLD
 					}
 					else if (mt.getUnitType() == BWAPI::UnitTypes::Enum::Zerg_Hive)
 					{
-						for (Unit lair : (*UnitDataSets)[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Lair].m_units)
+						for (UnitInfo* lair : (*Units)[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Lair])
 							//auto & lair = *MyUnitSets[BWAPI::UnitTypes::Enum::Zerg_Lair].m_units.begin();
 						{
-							if (lair->getTilePosition() == Broodwar->self()->getStartLocation())
-								if (!lair->isMorphing())
+							if (lair->m_unit->getTilePosition() == Broodwar->self()->getStartLocation())
+								if (!lair->m_unit->isMorphing())
 								{
-									bool result = lair->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType()));
+									bool result = lair->m_unit->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType()));
 									if (result)
 									{
-										(*UnitDataSets)[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Lair].m_units.erase(lair);
+										(*Units)[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Lair].erase(lair);
 										/*reservedMineral -= mt.getUnitType().mineralPrice();
 										reservedGas -= mt.getUnitType().gasPrice();*/
 									}
@@ -406,10 +476,10 @@ namespace HOLD
 					else
 					{
 						//for (auto & worker : MyUnitSets[BWAPI::UnitTypes::Zerg_Drone].m_units)
-						if ((*UnitDataSets)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].m_units.empty())
+						if ((*Units)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].empty())
 							return false;
 
-						BWAPI::Unit supplyBuilder = *(*UnitDataSets)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].m_units.begin();
+						UnitInfo* supplyBuilder = *(*Units)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].begin();
 						{
 							// Retrieve a unit that is capable of constructing the supply needed
 							/*BWAPI::Unit supplyBuilder = (worker)->getClosestUnit(BWAPI::Filter::GetType == mt.unitType.whatBuilds().first &&
@@ -418,23 +488,23 @@ namespace HOLD
 							// If a unit was found
 							if (supplyBuilder)
 							{
-								BWAPI::TilePosition targetBuildLocation = BWAPI::Broodwar->getBuildLocation(mt.getUnitType(), supplyBuilder->getTilePosition(), 256);
+								BWAPI::TilePosition targetBuildLocation = BWAPI::Broodwar->getBuildLocation(mt.getUnitType(), supplyBuilder->m_unit->getTilePosition(), 256);
 								if (targetBuildLocation != TilePositions::Invalid)
 								{
 									// Register an event that draws the target build location
-									BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
-									{
-										BWAPI::Broodwar->drawBoxMap(BWAPI::Position(targetBuildLocation),
-											BWAPI::Position(targetBuildLocation + mt.getUnitType().tileSize()),
-											BWAPI::Colors::Blue);
-									},
-										[=](BWAPI::Game*) {return (*UnitDataSets)[Broodwar->self()][mt.getUnitType()].m_units.empty(); },  // condition
-										mt.getUnitType().buildTime() + 100);  // frames to run
+									//BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
+									//{
+									//	BWAPI::Broodwar->drawBoxMap(BWAPI::Position(targetBuildLocation),
+									//		BWAPI::Position(targetBuildLocation + mt.getUnitType().tileSize()),
+									//		BWAPI::Colors::Blue);
+									//},
+									//	[=](BWAPI::Game*) {return (*Units)[Broodwar->self()][mt.getUnitType()].empty(); },  // condition
+									//	mt.getUnitType().buildTime() + 100);  // frames to run
 
 																			  // Order the builder to construct the supply structure
 
 
-									bool result = supplyBuilder->build(mt.getUnitType(), targetBuildLocation);
+									bool result = supplyBuilder->m_unit->build(mt.getUnitType(), targetBuildLocation);
 									if (result == true)
 									{
 										/*reservedMineral -= requireMin;
@@ -482,12 +552,12 @@ namespace HOLD
 				&& gas >= requireGas)
 			{
 				bool result = false;
-				for (auto u : (*UnitDataSets)[Broodwar->self()][mt.getUpgradeType().whatUpgrades()].m_units)
+				for (auto u : (*Units)[Broodwar->self()][mt.getUpgradeType().whatUpgrades()])
 				{
-					if (!u->isUpgrading()
-						&& !u->isBeingConstructed())
+					if (!u->m_unit->isUpgrading()
+						&& !u->m_unit->isBeingConstructed())
 					{
-						result = u->upgrade(mt.getUpgradeType());
+						result = u->m_unit->upgrade(mt.getUpgradeType());
 					}
 				}
 				//todo if unable to find upgrade building or cannot upgrade this time
@@ -530,9 +600,9 @@ namespace HOLD
 			if (minerals >= requireMin
 				&& gas >= requireGas)
 			{
-				if (*(*UnitDataSets)[Broodwar->self()][mt.getTechType().whatResearches()].m_units.begin() != nullptr)
+				if (*(*Units)[Broodwar->self()][mt.getTechType().whatResearches()].begin() != nullptr)
 				{
-					if ((*(*UnitDataSets)[Broodwar->self()][mt.getTechType().whatResearches()].m_units.begin())->research(mt.getTechType()))
+					if ((*(*Units)[Broodwar->self()][mt.getTechType().whatResearches()].begin())->m_unit->research(mt.getTechType()))
 					{
 						reservedMineral -= requireMin;
 						reservedGas -= requireGas;
@@ -561,7 +631,7 @@ namespace HOLD
 		UnitCommand unitType;
 		unitType.type = UnitCommandTypes::Morph;
 		unitType.extra = ut;
-		for(int i = 1; i < count + 1; ++i)
+		for(int i = 0; i < count; ++i)
 		{
 			buildorder.push_back(unitType);
 		}
@@ -569,7 +639,6 @@ namespace HOLD
 	void LogisticsCommand::AddOrder(const UpgradeType& ut, const int& count, const int& priority)
 	{
 		UnitCommand upgradeType;
-
 		upgradeType.type = UnitCommandTypes::Upgrade;
 		upgradeType.extra = ut;
 		buildorder.push_back(upgradeType);
@@ -654,7 +723,7 @@ namespace HOLD
 				if (buildorder.front().getUnitType() > 62)
 				{
 					//(*UnitDataSets)[Broodwar->self()][UnitTypes::Enum::Zerg_Drone].m_units.erase(unit);
-					(*UnitDataSets)[Broodwar->self()][UnitTypes::Enum::Zerg_Drone].RemoveUnit(unit);
+					(*Units)[Broodwar->self()][UnitTypes::Enum::Zerg_Drone].RemoveUnit(unit);
 
 					reservedMineral -= unitType.mineralPrice();
 					reservedGas -= unitType.gasPrice();

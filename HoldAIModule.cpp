@@ -3,7 +3,6 @@
 \file   HoldAIModule.cpp
 \author Yeongki Baek
 \par    email: yeongki.baek\@digipen.edu
-\par    GAM400
 \date   08/01/2017
 \brief
 This is the interface file for the module
@@ -68,25 +67,10 @@ int isPointOnLine(Position p1, Position p2, Position p3) // returns true if p3 i
 	return 0;
 }
 
-namespace { auto & theMap = BWEM::Map::Instance(); }
-
 #include "BehaviorTree.hpp"
 #include "Drone.hpp"
 
- //not sure containing current position(0,0)
-std::array<std::tuple<int, int, char>, 8> dirs =
-{
-	std::make_tuple(-1, -1, 'UL'), std::make_tuple(0, -1, 'UM'), std::make_tuple(1, -1, 'UR'),
-	std::make_tuple(-1, 0, 'ML'),/*std::make_tuple(0, 0, 'MM'),*/std::make_tuple(1, 0, 'MR'),
-	std::make_tuple(-1, 1, 'BL'), std::make_tuple(0, 1, 'BM'), std::make_tuple(1, 1, 'BR')
-};
-
-std::array<std::tuple<int, int, char>, 8> walktTileOffsets =
-{
-	std::make_tuple(-8, -8, 'UL'), std::make_tuple(0, -8, 'UM'), std::make_tuple(8, -8, 'UR'),
-	std::make_tuple(-8, 0, 'ML'),/*std::make_tuple(0, 0, 'MM'),*/std::make_tuple(8, 0, 'MR'),
-	std::make_tuple(-8, 8, 'BL'), std::make_tuple(0, 8, 'BM'), std::make_tuple(8, 8, 'BR')
-};
+ 
 
 
 BWAPI::Position NextTarget()
@@ -94,223 +78,7 @@ BWAPI::Position NextTarget()
 	return Position();
 };
 
-/*
-*todo : to attack safely,
-* 1. find more safety place along the forward direction to target
-* 2. until the target is in attack radius
-* 3. once it got into the range
-* 4. try to hit and run
-*
-* status : attackmove
-* attackunit
-* move
-*
-*
-* 1. get direction vector
-* 2. normalize
-* 3. set flag depen on diffrence between x and y coordinates
-* 4.
-*/
 
-BWAPI::Position FindMostSafetyZone_Attack(std::vector<Grid> &inf_map, BWAPI::Position pos, BWAPI::Position& dir, bool ground = false)
-{
-	std::vector<WalkPosition> candidates;
-
-	std::vector<bool> neighbor(8, false);
-
-	/*
-	*  +--+--+     +-+-+-+
-	*  | 0| 1|     |0|1|2|
-	*  |  |  |	   +-+-+-+
-	*  +--+--+	-> |3| |4|
-	*  | 2| 3|	   +-+-+-+
-	*  |  |  |	   |5|6|7|
-	*  +--+--+	   +-+-+-+
-	*
-	*
-	* case 0 : x < 0 && y < 0
-	* -> include 0,1,3
-	*
-	* case 1 : x > 0 && y < 0
-	* -> include 1,2,4
-	*
-	* case 2 : x > 0 && y > 0
-	* -> include 4,6,7
-	*
-	* case 3 : x < 0 && y > 0
-	* -> include 3,5,6
-	*/
-	// I don't think pos will be equal to dir. Which means the unit and target at the same position
-	// but just in case...
-	if (dir.x <= 0 && dir.y <= 0)
-	{
-		neighbor[0] = neighbor[1] = neighbor[3] = true;
-	}
-	if (dir.x >= 0 && dir.y <= 0)
-	{
-		neighbor[1] = neighbor[2] = neighbor[4] = true;
-	}
-	if (dir.x >= 0 && dir.y >= 0)
-	{
-		neighbor[4] = neighbor[6] = neighbor[7] = true;
-	}
-	if (dir.x <= 0 && dir.y >= 0)
-	{
-		neighbor[3] = neighbor[5] = neighbor[6] = true;
-	}
-
-	int lowest = (std::numeric_limits<int>::max)();
-	for (int i = 0; i < 8; ++i)
-	{
-		if (!neighbor[i])
-			continue;
-
-		int dx = std::get<0>(dirs[i]);
-		int dy = std::get<1>(dirs[i]);
-
-		//TilePosition targetTilePosition{ pos.x / 32, pos.y / 32 };
-		WalkPosition targetWalkPosition{ pos.x / 8 + dx, pos.y / 8 + dy };
-		//targetPosition.x += dx;
-		//targetPosition.y += dy;
-
-		// set target tile position
-		//int influence = (std::numeric_limits<int>::max)();
-
-
-		if (targetWalkPosition.isValid())
-		{
-			if (ground)
-				if (!Broodwar->isWalkable(targetWalkPosition))
-					continue;
-
-			int influence = HOLD::GetInfluenceValue(inf_map, pos.x + std::get<0>(walktTileOffsets[i]), pos.y + std::get<1>(walktTileOffsets[i]));// inf_map[targetPosition.y * mapHeight + targetPosition.x];
-
-			if (influence < lowest)
-			{
-				std::vector<WalkPosition>().swap(candidates);
-				candidates.push_back(targetWalkPosition);
-				lowest = influence;
-			}
-			else if (lowest == influence)
-			{
-				candidates.push_back(targetWalkPosition);
-			}
-		}
-	}
-
-	if (candidates.size())
-	{
-		Position returnPosition{ pos };
-		int closest = (std::numeric_limits<int>::max)();
-
-
-		for (WalkPosition candidate : candidates)
-		{
-			//not sure which function is better (getApproxDistance or getDistance)
-			Position target(candidate.x * 8 + pos.x % 8, candidate.y * 8 + pos.y % 8);
-			int distance = pos.getApproxDistance(target);
-
-			if (distance < closest)
-			{
-				closest = distance;
-				returnPosition = target;
-			}
-		}
-		return returnPosition;
-	}
-	else
-	{
-		if (candidates.empty())
-			return pos;
-		//Broodwar->leaveGame();
-
-		//return Position{ candidates.at(0).x * 32 + pos.x % 32, candidates.at(0).y * 32 + pos.y % 32 };
-	}
-
-};
-
-
-//todo : use astar within 2tile size, or fix it!!!!!!!!!!!!!!!!!!!!!!
-BWAPI::Position FindMostSafetyZone_Flee(std::vector<Grid> &inf_map, BWAPI::Position pos, bool ground = false)
-{
-	std::vector<WalkPosition> candidates;
-
-
-	int lowest = (std::numeric_limits<int>::max)();
-	for (int i = 0; i < 8; ++i)
-	{
-		int dx = std::get<0>(dirs[i]);
-		int dy = std::get<1>(dirs[i]);
-
-		//TilePosition targetTilePosition{ pos.x / 32, pos.y / 32 };
-		WalkPosition targetWalkPosition{ pos.x / 8 + pos.x % 8 + dx, pos.y / 8 + pos.y % 8 + dy };
-		//targetPosition.x += dx;
-		//targetPosition.y += dy;
-
-		// set target tile position
-		//int influence = (std::numeric_limits<int>::max)();
-
-
-		if (targetWalkPosition.isValid())
-		{
-			if (ground)
-				if (!Broodwar->isWalkable(targetWalkPosition))
-					continue;
-
-			int influence = HOLD::GetInfluenceValue(inf_map, pos.x + std::get<0>(walktTileOffsets[i]), pos.y + std::get<1>(walktTileOffsets[i]));// inf_map[targetPosition.y * mapHeight + targetPosition.x];
-
-			if (influence < lowest)
-			{
-				std::vector<WalkPosition>().swap(candidates);
-				candidates.push_back(targetWalkPosition);
-				lowest = influence;
-			}
-			else if (lowest == influence)
-			{
-				candidates.push_back(targetWalkPosition);
-			}
-		}
-	}
-
-	//todo : if all the candidates have same values, 
-	if (candidates.size())
-	{
-		Position returnPosition{ pos };
-		int closest = (std::numeric_limits<int>::max)();
-
-
-		for (WalkPosition candidate : candidates)
-		{
-			//not sure which function is better (getApproxDistance or getDistance)
-			//Position target(candidate.x * 8 + pos.x % 8, candidate.y * 8 + pos.y % 8);
-			Position target(candidate.x * 8 + pos.x % 8, candidate.y * 8 + pos.y % 8);
-
-			int distance = pos.getApproxDistance(target);
-
-			if (distance < closest)
-			{
-				closest = distance;
-				returnPosition = target;
-			}
-		}
-		BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
-		{
-			BWAPI::Broodwar->drawLineMap(pos, returnPosition, BWAPI::Colors::White);
-		},
-			[=](BWAPI::Game*) {return true; },  // condition
-			15);  // frames to run
-		return returnPosition;
-	}
-	else
-	{
-		/*if (candidates.empty())
-			return pos;*/
-		//Broodwar->leaveGame();
-
-		//return Position{ candidates.at(0).x * 32 + pos.x % 32, candidates.at(0).y * 32 + pos.y % 32 };
-	}
-
-};
 
 BehaviorTree behaviorTree;
 
@@ -321,12 +89,6 @@ short int stitch(char c1, char c2) {
 	return (static_cast<unsigned char>(c2) << 8) | static_cast<unsigned char>(c1);
 }
 
-
-
-static int currentorder = 0;
-
-std::vector<TilePosition> enemyBaseCandidate;
-std::vector<TilePosition> enemyBase;
 
 
 
@@ -436,6 +198,13 @@ int BestMineral(int SCVindex, int depth) {
 
 void HoldAIModule::onStart()
 {
+	runflag = true;
+	if (strcmp(Broodwar->mapHash().c_str(), "ed7c5b1b03234a0f7dd484112bbb1bc49db1d6f0") == 0) // testcase
+		runflag = false;
+
+	Broodwar->printf("2018_03_16");
+
+	
 	try
 	{
 		//DataContext data;
@@ -465,8 +234,10 @@ void HoldAIModule::onStart()
 
 
 		Broodwar->setCommandOptimizationLevel(1);
-		Broodwar->setLocalSpeed(40);
-		Broodwar->setFrameSkip(16);
+		Broodwar->setLocalSpeed(0);
+		Broodwar->setFrameSkip(0);
+		//Broodwar->setLocalSpeed(40);
+		//Broodwar->setFrameSkip(16);
 
 #ifndef _DEBUG
 #else
@@ -501,7 +272,8 @@ void HoldAIModule::onStart()
 
 		HQ = HeadQuarters::GetInstance();
 
-		HQ->AttachCommander(new LogisticsCommand);
+		if( runflag)
+			HQ->AttachCommander(new LogisticsCommand);
 		HQ->AttachCommander(new IntelligenceCommand);
 		HQ->Initialize();
 
@@ -517,10 +289,14 @@ void HoldAIModule::onStart()
 			/*if (type == UnitTypes::Enum::Zerg_Larva)
 			continue;*/
 
-			HQ->GetCommand<IntelligenceCommand>()->AddUnit(u);
+			if (runflag)
+			{
+				//HQ->GetCommand<IntelligenceCommand>()->AddUnit(u);
+				
 
-			//UnitDataSets[Broodwar->self()][u->getType()].m_units.emplace(u);
-			//++MyUnitSets[u->getType()].Completed;
+				//UnitDataSets[Broodwar->self()][u->getType()].m_units.emplace(u);
+				//++MyUnitSets[u->getType()].Completed;
+			}
 
 			/*
 			if (u->getType() == UnitTypes::Enum::Zerg_Hatchery)
@@ -569,70 +345,22 @@ void HoldAIModule::onStart()
 
 			Broodwar << "Map initialization..." << std::endl;
 
-			theMap.Initialize();
-			theMap.EnableAutomaticPathAnalysis();
-			bool startingLocationOK = theMap.FindBasesForStartingLocations();
-			assert(startingLocationOK);
+			/*if (runflag)
+			{
+				theMap.Initialize();
+				theMap.EnableAutomaticPathAnalysis();
+				bool startingLocationOK = theMap.FindBasesForStartingLocations();
+				assert(startingLocationOK);
+			}*/
 
 			Broodwar << "gl hf" << std::endl;
 		}
 
+		
 		analyzed = false;
 		analysis_just_finished = false;
 
-		// getting starting position
-		TilePosition starting = Broodwar->self()->getStartLocation();
-
-
-
-		for (const BWEM::Area & area : theMap.Areas())
-		{
-			for (const BWEM::Base & base : area.Bases())
-			{
-				/*if (starting.x == base.Location().x
-				&& starting.y == base.Location().y)*/
-				{
-					std::vector<BWEM::Ressource *> AssignedResources(base.Minerals().begin(), base.Minerals().end());
-					//AssignedResources.insert(AssignedRessources.end(), base.Geysers().begin(), base.Geysers().end());
-
-					for (auto &mineral : AssignedResources)
-					{
-						distBtwMineral.push_back(std::make_pair<Position, float>(mineral->Pos(),
-							distance(float(base.Center().x) + float(BWAPI::UnitTypes::Terran_Command_Center.tileSize().x) * 0.5f,
-								float(base.Center().y) + float(BWAPI::UnitTypes::Terran_Command_Center.tileSize().y) * 0.5f,
-								float(mineral->Pos().x), float(mineral->Pos().y), float(BWAPI::UnitTypes::Terran_Command_Center.tileWidth()), float(BWAPI::UnitTypes::Terran_Command_Center.tileHeight()))));
-
-					}
-				}
-			}
-		}
-
-
-		enemyBaseCandidate = theMap.StartingLocations();
-
-		const TilePosition myStartingPos = Broodwar->self()->getStartLocation();
-
-		std::swap(enemyBaseCandidate.front(), *find(enemyBaseCandidate.begin(), enemyBaseCandidate.end(), myStartingPos));
-
-		const BWEM::Area * pMyStartingArea = theMap.GetArea(myStartingPos);
-		BWEM::utils::really_remove_if(enemyBaseCandidate, [pMyStartingArea](TilePosition t)
-		{ return !theMap.GetArea(t)->AccessibleFrom(pMyStartingArea); });
-
-		// sorts m_HisPossibleLocations, making each element the nearest one from the previous one
-		for (int i = 1; i < (int)enemyBaseCandidate.size(); ++i)
-		{
-			TilePosition lastPos = enemyBaseCandidate[i - 1];
-			for (int j = i + 1; j < (int)enemyBaseCandidate.size(); ++j)
-			{
-				int groundDist_lastPos_i;
-				int groundDist_lastPos_j;
-				theMap.GetPath(Position(lastPos), Position(enemyBaseCandidate[i]), &groundDist_lastPos_i);
-				theMap.GetPath(Position(lastPos), Position(enemyBaseCandidate[j]), &groundDist_lastPos_j);
-				if (groundDist_lastPos_j < groundDist_lastPos_i)
-					std::swap(enemyBaseCandidate[i], enemyBaseCandidate[j]);
-			}
-		}
-		BWEM::utils::really_remove(enemyBaseCandidate, myStartingPos);
+		
 	}
 	catch (const std::exception & e)
 	{
@@ -647,7 +375,6 @@ void HoldAIModule::onEnd(bool isWinner)
 	if (isWinner)
 	{
 		HQ->Shutdown();
-		// Log your win here!
 
 		distBtwMineral.clear();
 		lineBtwMineral.clear();
@@ -680,99 +407,109 @@ void HoldAIModule::onEnd(bool isWinner)
 
 
 void HoldAIModule::onFrame()
-{
+{/*
+	for( auto & u : unit_infos_)
+	{
+		Broodwar->drawTextMap(u()->getPosition(), "%d", u.GetAverageHP(24));
+	}
+*/
+	if (runflag)
+	{
+		if(Broodwar->getStartLocations().size() != 2)
+			if (Broodwar->getFrameCount() < 10)
+			{
+				auto it = std::find(std::begin(HQ->GetCommand<IntelligenceCommand>()->startingLocations), std::end(HQ->GetCommand<IntelligenceCommand>()->startingLocations), Broodwar->self()->getStartLocation());
+				++it;
+				if (it == std::end(HQ->GetCommand<IntelligenceCommand>()->startingLocations))
+					it = std::begin(HQ->GetCommand<IntelligenceCommand>()->startingLocations);
+
+				(HQ->GetCommand<IntelligenceCommand>()->Units[Broodwar->self()][UnitTypes::Enum::Zerg_Overlord]).move(Position{ *it });
+			}
+	}
+
+	/*if (Broodwar->getFrameCount() % 50 == 0)
+	{
+		for(auto su : Broodwar->self()->getUnits())
+		{
+			if(su->getType() == UnitTypes::Protoss_High_Templar)
+			{
+				su->issueCommand(UnitCommand::useTech(su, TechTypes::Psionic_Storm, Position{ 800, 3400 }));
+			}
+			else if(su->getType() == UnitTypes::Enum::Zerg_Defiler)
+			{
+				su->issueCommand(UnitCommand::useTech(su, TechTypes::Plague, Position{ 1050, 3400 }));
+			}
+		}
+	}*/
+
+	//for (auto u : Broodwar->self()->getUnits())
+	//{
+	//	if (u->getType() == UnitTypes::Zerg_Zergling)
+	//		Broodwar->drawBoxMap(u->getLeft(), u->getTop(), u->getRight(), u->getBottom(), Colors::White);
+
+	//	/*if (Broodwar->getKeyState(Key::K_A))
+	//		if (u->getType() == UnitTypes::Enum::Zerg_Mutalisk)
+	//			u->issueCommand(BWAPI::UnitCommand::attack(nullptr, Broodwar->getScreenPosition() + Broodwar->getMousePosition()));*/
+	//}
+		
+	//zerg_swarm, web
+	/*for(auto &spell : Broodwar->getNeutralUnits())
+	{
+		if (!spell->getType().isBuilding())
+		{
+			Broodwar->drawTextMap(spell->getPosition(), "%s", spell->getType().c_str());
+
+			Broodwar->drawBoxMap(spell->getLeft(), spell->getTop(), spell->getRight(), spell->getBottom(), Colors::Red);
+
+			Broodwar->drawTextMap(spell->getPosition(), "%c%d - %d = %d \n %d - %d = %d", Text::White, spell->getRight(), spell->getLeft(), spell->getRight() - spell->getLeft(), spell->getTop(), spell->getBottom(), spell->getTop() - spell->getBottom());
+		}
+	}*/
+
+	//for (auto &b : Broodwar->getBullets())
+	//{
+	//	Position p = b->getPosition();
+	//	double velocityX = b->getVelocityX();
+	//	double velocityY = b->getVelocityY();
+	//	Broodwar->drawLineMap(p, p + Position((int)velocityX, (int)velocityY), b->getPlayer() == Broodwar->self() ? Colors::Green : Colors::Red);
+	//	Broodwar->drawTextMap(p, "%c%s", b->getPlayer() == Broodwar->self() ? Text::Green : Text::Red, b->getType().c_str());
+
+	//	if (b->getType() == BulletTypes::Enum::Psionic_Storm)
+	//	{
+	//		Broodwar->drawCircleMap(b->getPosition(), 50, Colors::Red);
+	//	}
+
+	//	if (b->getType() == BulletTypes::Enum::Plague_Cloud)
+	//	{
+	//		Position a{ 65, 65 };
+	//		Broodwar->drawBoxMap(b->getPosition() - a, b->getPosition() + a, Colors::Red);
+	//	}
+
+	//	if(b->getType() == BulletTypes::Enum::n)//nuclear
+	//}
+
 	try
 	{
+		auto m_StartTime = std::chrono::high_resolution_clock::now();
+		//std::chrono::time_point<std::chrono::system_clock> m_StartTime = std::chrono::system_clock::now();
+		//std::chrono::high_resolution_clock::time_point m_StartTime = std::chrono::high_resolution_clock::now();
 		HQ->Run();
-		//todo : cover Psionic storm
-		//for (auto &b : Broodwar->getBullets())
-		//{
-		//	if (b->getType() == BulletTypes::Psionic_Storm)
-		//	{
-		//		Position p = b->getPosition();
-		//		//Broodwar->drawTextMap(p, "%c%s", b->getPlayer() == Broodwar->self() ? Text::Green : Text::Red, b->getType().c_str());
-		//		Broodwar->drawCircleMap(p, 9*8, Colors::Red);
-
-		//		int x, y;
-		//		x = b->getPosition().x / 32;
-		//		y = b->getPosition().y / 32;
-		//		
-
-		//		float groundRadius = static_cast<float>(9 * 8);
-		//		float airRadius = static_cast<float>(9*8);
-
-		//		//todo : handle defense buildings
-		//		float groundOffset = -0.8;
-
-		//		if (groundRadius > 32)
-		//			groundOffset = -1.8;
-
-		//		//offset = 0.2;
-
-		//		int groundStartX = floor((p.x - groundRadius) / 32.f + groundOffset);
-		//		int groundStartY = floor((p.y - groundRadius) / 32.f + groundOffset);
-
-		//		float airOffset = -0.8;
-
-		//		if (airRadius > 32)
-		//			airOffset = -1.8;
-
-		//		int airStartX = floor((p.x - airRadius) / 32.f + airOffset);
-		//		int airStartY = floor((p.y - airRadius) / 32.f + airOffset);
-
-		//		int groundEndX = ceil((p.x + groundRadius) / 32.f - groundOffset);
-		//		int groundEndY = ceil((p.y + groundRadius) / 32.f - groundOffset);
-
-		//		int airEndX = ceil((p.x + airRadius) / 32.f - airOffset);
-		//		int airEndY = ceil((p.y + airRadius) / 32.f - airOffset);
-
-		//		//need to clamp
-		//		Math::Clamp(groundStartX, 0, mapWidth);
-		//		Math::Clamp(groundStartY, 0, mapHeight);
-		//		Math::Clamp(groundEndX, 0, mapWidth);
-		//		Math::Clamp(groundEndY, 0, mapHeight);
-
-		//		Math::Clamp(airStartX, 0, mapWidth);
-		//		Math::Clamp(airStartY, 0, mapHeight);
-		//		Math::Clamp(airEndX, 0, mapWidth);
-		//		Math::Clamp(airEndY, 0, mapHeight);
-
-		//		
-		//		int damage = 14 * 8;
-
-		//			if (damage)
-		//				for (int Y = groundStartY; Y < groundEndY; ++Y)
-		//				{
-		//					for (int X = groundStartX; X < groundEndX; ++X)
-		//					{
-		//						// make influence fall of with distance:
-		//						float dist = Math::Distance(Vector2(x * 32 + 16, y * 32 + 16), Vector2(X * 32 + 16, Y * 32 + 16));
-		//						//dist = fmod(x, 32.f);
-		//						dist /= 32.f;
-		//						if (dist <= 1.f)
-		//							dist = 1.f;
-
-		//						opinfluenceGround[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
-		//						opinfluenceAir[Y * mapHeight + X] += static_cast<int>(static_cast<float>(damage) / dist);
-		//					}
-		//				}
-		//			
-		//	}
-		//}
+		
 		//for (const BWEM::Area & area : theMap.Areas())
 		//const TilePosition myStartingPos = Broodwar->self()->getStartLocation();
-		const BWEM::Area * area = theMap.GetArea(Broodwar->self()->getStartLocation());
-		int cpx, cpy;
 
-		for (const BWEM::ChokePoint * cp : area->ChokePoints())
-			for (BWEM::ChokePoint::node end : {BWEM::ChokePoint::end1, BWEM::ChokePoint::end2})
-			{
-				//Broodwar->drawLineMap(Position(cp->Pos(BWEM::ChokePoint::middle)), Position(cp->Pos(end)), BWEM::utils::MapDrawer::Color::cp);
-				//Broodwar->drawTextMap(cp->Center().x * 8, cp->Center().y * 8, "%c%d, %d", Text::Cyan, cp->Center().x * 8, cp->Center().y * 8);
-				//Broodwar->drawTextMap(Position(cp->Pos(BWEM::ChokePoint::middle)), "%d, %d", cp->Pos((BWEM::ChokePoint::middle)).x, cp->Pos((BWEM::ChokePoint::middle)).y);
-				cpx = Position(cp->Pos(BWEM::ChokePoint::middle)).x;
-				cpy = Position(cp->Pos(BWEM::ChokePoint::middle)).y;
-			}
+		//todo: uncomment
+		//const BWEM::Area * area = theMap.GetArea(Broodwar->self()->getStartLocation());
+		//int cpx, cpy;
+
+		//for (const BWEM::ChokePoint * cp : area->ChokePoints())
+		//	for (BWEM::ChokePoint::node end : {BWEM::ChokePoint::end1, BWEM::ChokePoint::end2})
+		//	{
+		//		//Broodwar->drawLineMap(Position(cp->Pos(BWEM::ChokePoint::middle)), Position(cp->Pos(end)), BWEM::utils::MapDrawer::Color::cp);
+		//		//Broodwar->drawTextMap(cp->Center().x * 8, cp->Center().y * 8, "%c%d, %d", Text::Cyan, cp->Center().x * 8, cp->Center().y * 8);
+		//		//Broodwar->drawTextMap(Position(cp->Pos(BWEM::ChokePoint::middle)), "%d, %d", cp->Pos((BWEM::ChokePoint::middle)).x, cp->Pos((BWEM::ChokePoint::middle)).y);
+		//		cpx = Position(cp->Pos(BWEM::ChokePoint::middle)).x;
+		//		cpy = Position(cp->Pos(BWEM::ChokePoint::middle)).y;
+		//	}
 
 
 
@@ -1448,7 +1185,7 @@ void HoldAIModule::onFrame()
 		*/
 
 
-		for (auto &i : distBtwMineral)
+		/*for (auto &i : distBtwMineral)
 		{
 			Broodwar->drawText(CoordinateType::Map, i.first.x, i.first.y, "%g", i.second);
 		}
@@ -1457,7 +1194,7 @@ void HoldAIModule::onFrame()
 		{
 			Broodwar->drawLineMap(dl.first, dl.second, Colors::Teal);
 		}
-
+*/
 
 
 		/*switch (buildorder.front().getType())
@@ -1732,12 +1469,39 @@ void HoldAIModule::onFrame()
 
 		Broodwar->drawTextScreen(64, 268, "%c(%u * %u)", Text::White, Broodwar->mapWidth(), Broodwar->mapHeight());*/
 
-		for (auto u : Broodwar->getAllUnits())
-		{
-			Broodwar->setTextSize(Text::Size::Huge);
-			Broodwar->drawTextMap(u->getPosition(), "%d", u->getID());
-			Broodwar->setTextSize(Text::Size::Small);
-		}
+		//for (auto u : Broodwar->getAllUnits())
+		//{
+		//	Broodwar->setTextSize(Text::Size::Huge);
+		//	//Broodwar->drawTextMap(u->getPosition(), "%d", u->getID(), HQ->GetCommand<IntelligenceCommand>()->);
+		//	Broodwar->setTextSize(Text::Size::Small);
+		//}
+
+		//auto selectedUnit = Broodwar->getSelectedUnits();
+		//if(selectedUnit.size() == 1)
+		//{
+		//	const Unit* u = &(*selectedUnit.begin());
+		//	for(int x = 0; x < 460; ++x)
+		//	{
+		//		Broodwar->drawTextScreen(x, 400, "%d", (*u)->getID());
+		//	}
+		//}
+
+		
+		//auto elapsedTime = (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_StartTime)).count();
+		//auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_StartTime).count();
+		//std::chrono::duration<double, std::milli> elapsedTime = std::chrono::high_resolution_clock::now() - m_StartTime;
+		//Broodwar->drawTextScreen(100, 100, "%f", elapsedTime.count());
+
+		Broodwar->drawTextScreen(100, 100, "%d", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_StartTime).count());
+
+
+		/*
+		 * More than 1 frame longer than 10 seconds, or
+		 * more than 10 frames longer than 1 second, or
+		 * more than 320 frames longer than 85 milliseconds.
+		 */
+
+
 	}
 	catch (const std::exception & e)
 	{
@@ -1885,16 +1649,42 @@ void HoldAIModule::onNukeDetect(BWAPI::Position target)
 void HoldAIModule::onUnitDiscover(BWAPI::Unit unit)
 {
 	//void, use show fn
+	//BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
+	//{
+	//	//Broodwar->drawTextMap(unit->getPosition(), "Event:%d", i);
+	//	if(unit)
+	//	Broodwar->drawCircleMap(unit->getPosition(), 3, Colors::Teal, true);
+	//},
+	//	[=](BWAPI::Game*) {return true; },  // condition
+	//	50);  // frames to run
 }
 
 void HoldAIModule::onUnitEvade(BWAPI::Unit unit)
 {
 	//void, use hide fn
+	//BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
+	//{
+	//	//Broodwar->drawTextMap(unit->getPosition(), "Event:%d", i);
+	//	if(unit)
+	//	Broodwar->drawCircleMap(unit->getPosition(), 3, Colors::Red, true);
+	//},
+	//	[=](BWAPI::Game*) {return true; },  // condition
+	//	50);  // frames to run
+	//HQ->GetCommand<IntelligenceCommand>()->Units[unit->getPlayer()][unit->getType()].find(unit->getID()).m_lastPosition = unit->getPosition();
 }
 
 void HoldAIModule::onUnitShow(BWAPI::Unit unit)
 {
 	HQ->GetCommand<IntelligenceCommand>()->OnUnitShow(unit);
+	//BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
+	//{
+	//	//Broodwar->drawTextMap(unit->getPosition(), "Event:%d", i);
+	//	if (unit)
+	//		Broodwar->drawCircleMap(unit->getPosition(), 10, Colors::Teal, false);
+	//},
+	//	[=](BWAPI::Game*) {return true; },  // condition
+	//	50);  // frames to run
+
 	//// if it's tournament, then try to use enemies
 	//if (unit->getPlayer() == Broodwar->enemy())
 	//{
@@ -1955,24 +1745,24 @@ void HoldAIModule::onUnitShow(BWAPI::Unit unit)
 	//	UnitDataSets[unit->getPlayer()][unit->getType()].m_savedUnits[unit->getID()].m_lastType = unit->getType();*/
 	//}
 	//else
-	{
-		//todo : diagonalline for base
-		auto AddDiagonalLineOfBase = [](auto & b)
-		{
-			DiagonalLineOfBase.emplace_back(std::make_pair<Position, Position>(Position{ b->getLeft(), b->getTop() }, Position{ b->getLeft() - 100, b->getTop() - 100 }));
-			DiagonalLineOfBase.emplace_back(std::make_pair<Position, Position>(Position{ b->getRight(), b->getTop() }, Position{ b->getRight() + 100, b->getTop() - 100 }));
-			DiagonalLineOfBase.emplace_back(std::make_pair<Position, Position>(Position{ b->getLeft(), b->getBottom() }, Position{ b->getLeft() - 100, b->getBottom() + 100 }));
-			DiagonalLineOfBase.emplace_back(std::make_pair<Position, Position>(Position{ b->getRight(), b->getBottom() }, Position{ b->getRight() + 100, b->getBottom() + 100 }));
+	//{
+	//	//todo : diagonalline for base
+	//	auto AddDiagonalLineOfBase = [](auto & b)
+	//	{
+	//		DiagonalLineOfBase.emplace_back(std::make_pair<Position, Position>(Position{ b->getLeft(), b->getTop() }, Position{ b->getLeft() - 100, b->getTop() - 100 }));
+	//		DiagonalLineOfBase.emplace_back(std::make_pair<Position, Position>(Position{ b->getRight(), b->getTop() }, Position{ b->getRight() + 100, b->getTop() - 100 }));
+	//		DiagonalLineOfBase.emplace_back(std::make_pair<Position, Position>(Position{ b->getLeft(), b->getBottom() }, Position{ b->getLeft() - 100, b->getBottom() + 100 }));
+	//		DiagonalLineOfBase.emplace_back(std::make_pair<Position, Position>(Position{ b->getRight(), b->getBottom() }, Position{ b->getRight() + 100, b->getBottom() + 100 }));
 
-			/*Broodwar->drawLineMap(b->getLeft(), b->getTop(), b->getLeft() - 100, b->getTop() - 100, Colors::Teal);
-			Broodwar->drawLineMap(b->getRight(), b->getTop(), b->getRight() + 100, b->getTop() - 100, Colors::Teal);
-			Broodwar->drawLineMap(b->getLeft(), b->getBottom(), b->getLeft() - 100, b->getBottom() + 100, Colors::Teal);
-			Broodwar->drawLineMap(b->getRight(), b->getBottom(), b->getRight() + 100, b->getBottom() + 100, Colors::Teal);*/
-		};
+	//		/*Broodwar->drawLineMap(b->getLeft(), b->getTop(), b->getLeft() - 100, b->getTop() - 100, Colors::Teal);
+	//		Broodwar->drawLineMap(b->getRight(), b->getTop(), b->getRight() + 100, b->getTop() - 100, Colors::Teal);
+	//		Broodwar->drawLineMap(b->getLeft(), b->getBottom(), b->getLeft() - 100, b->getBottom() + 100, Colors::Teal);
+	//		Broodwar->drawLineMap(b->getRight(), b->getBottom(), b->getRight() + 100, b->getBottom() + 100, Colors::Teal);*/
+	//	};
 
-		if (unit->getType().isResourceDepot())
-			AddDiagonalLineOfBase(unit);
-	}
+	//	if (unit->getType().isResourceDepot())
+	//		AddDiagonalLineOfBase(unit);
+	//}
 }
 
 //todo : the thing I want is exatly what onUnitEvade is doing, so if I want that, I have to implement that function my own way.
@@ -1980,15 +1770,19 @@ void HoldAIModule::onUnitShow(BWAPI::Unit unit)
 void HoldAIModule::onUnitHide(BWAPI::Unit unit)
 {
 	int i = Broodwar->getFrameCount();
-	BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
-	{
-		//Broodwar->drawTextMap(unit->getPosition(), "Event:%d", i);
-		Broodwar->drawCircleMap(unit->getPosition(), 3, Colors::Brown, true);
-	},
-		[=](BWAPI::Game*) {return true; },  // condition
-		10);  // frames to run
+	//BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
+	//{
+	//	//Broodwar->drawTextMap(unit->getPosition(), "Event:%d", i);
+	//	Broodwar->drawCircleMap(unit->getPosition(), 3, Colors::Brown, true);
+	//},
+	//	[=](BWAPI::Game*) {return true; },  // condition
+	//	10);  // frames to run
 			  //todo : set unit's hide position
 	UnitType unitType = unit->getType();
+
+	//HQ->GetCommand<IntelligenceCommand>()->Units[unit->getPlayer()][unitType].find(unit->getID()).m_lastPosition = unit->getPosition();
+
+	
 
 	/*EnemyUnitSets[unitType.c_str()]._realUnits[unit->getID()]._lastPosition = unit->getPosition();
 	EnemyUnitSets[unitType.c_str()]._realUnits[unit->getID()]._lastSeen = Broodwar->getFrameCount();*/
@@ -2035,14 +1829,14 @@ void HoldAIModule::onUnitCreate(BWAPI::Unit unit)
 
 		//}
 		HQ->GetCommand<IntelligenceCommand>()->OnUnitCreate(unit);
-		// todo: enemy stuff; zerg_egg,
+		//// todo: enemy stuff; zerg_egg,
 
-		Broodwar->registerEvent([=](Game*)
-		{
-			Broodwar->drawTextScreen(410, 50, "onUnitCreate : %s", unit->getType().getName().c_str());
-		},
-			nullptr,  // condition
-			50);  // frames to run
+		//Broodwar->registerEvent([=](Game*)
+		//{
+		//	Broodwar->drawTextScreen(410, 50, "onUnitCreate : %s", unit->getType().getName().c_str());
+		//},
+		//	nullptr,  // condition
+		//	50);  // frames to run
 	}
 }
 
@@ -2052,8 +1846,8 @@ void HoldAIModule::onUnitDestroy(BWAPI::Unit unit)
 	try
 	{
 		UnitType unitType = unit->getType();
-		if (unit->getType().isMineralField()) theMap.OnMineralDestroyed(unit);
-		else if (unit->getType().isSpecialBuilding()) theMap.OnStaticBuildingDestroyed(unit);
+		/*if (unit->getType().isMineralField()) theMap.OnMineralDestroyed(unit);
+		else if (unit->getType().isSpecialBuilding()) theMap.OnStaticBuildingDestroyed(unit);*/
 
 		HQ->GetCommand<IntelligenceCommand>()->OnUnitDestroy(unit);
 
@@ -2083,16 +1877,16 @@ void HoldAIModule::onUnitDestroy(BWAPI::Unit unit)
 		//}
 		//UnitDataSets[unit->getPlayer()][unitType].RemoveUnit(unit);
 
-		if (unitType.isResourceDepot() && unit->getPlayer() != Broodwar->self())
-			enemyBase.erase(std::find(enemyBase.begin(), enemyBase.end(), unit->getTilePosition()));
+		/*if (unitType.isResourceDepot() && unit->getPlayer() != Broodwar->self())
+			enemyBase.erase(std::find(enemyBase.begin(), enemyBase.end(), unit->getTilePosition()));*/
 
 		//todo : the unit must removed from the unit container
-		Broodwar->registerEvent([=](Game*)
-		{
-			Broodwar->drawTextScreen(410, 60, "onUnitDestroy : %c%s m:%d g:%d", BWAPI::Text::Red, unitType.getName().c_str(), unitType.mineralPrice(), unitType.gasPrice());
-		},
-			nullptr,  // condition
-			100);  // frames to run
+		//Broodwar->registerEvent([=](Game*)
+		//{
+		//	Broodwar->drawTextScreen(410, 60, "onUnitDestroy : %c%s m:%d g:%d", BWAPI::Text::Red, unitType.getName().c_str(), unitType.mineralPrice(), unitType.gasPrice());
+		//},
+		//	nullptr,  // condition
+		//	100);  // frames to run
 	}
 	catch (const std::exception & e)
 	{
@@ -2184,18 +1978,18 @@ void HoldAIModule::onUnitMorph(BWAPI::Unit unit)
 			//	nullptr,  // condition
 			//	supplyProviderType.buildTime() + 100);  // frames to run
 
-			if (UnitTypes::Zerg_Egg == unitType)
-				return;
+			//if (UnitTypes::Zerg_Egg == unitType)
+			//	return;
 
-			if (!unitType.isBuilding())
-				return;
+			//if (!unitType.isBuilding())
+			//	return;
 
-			Broodwar->registerEvent([=](Game*)
-			{
-				Broodwar->drawTextScreen(410, 70, "onUnitMorph %s m:%d g:%d", unitType.getName().c_str(), unitType.mineralPrice(), unitType.gasPrice());
-			},
-				nullptr,  // condition
-				150);  // frames to run
+			//Broodwar->registerEvent([=](Game*)
+			//{
+			//	Broodwar->drawTextScreen(410, 70, "onUnitMorph %s m:%d g:%d", unitType.getName().c_str(), unitType.mineralPrice(), unitType.gasPrice());
+			//},
+			//	nullptr,  // condition
+			//	150);  // frames to run
 		}
 		else //if (Broodwar->isReplay())
 		{
@@ -2231,12 +2025,12 @@ void HoldAIModule::onUnitComplete(BWAPI::Unit unit)
 	if (UnitTypes::Zerg_Larva == unitType)
 		return;
 
-	Broodwar->registerEvent([=](Game*)
-	{
-		Broodwar->drawTextScreen(410, 80, "onUnitComplete %s m:%d g:%d", unitType.getName().c_str(), unitType.mineralPrice(), unitType.gasPrice());
-	},
-		nullptr,  // condition
-		50);  // frames to run
+	//Broodwar->registerEvent([=](Game*)
+	//{
+	//	Broodwar->drawTextScreen(410, 80, "onUnitComplete %s m:%d g:%d", unitType.getName().c_str(), unitType.mineralPrice(), unitType.gasPrice());
+	//},
+	//	nullptr,  // condition
+	//	50);  // frames to run
 
 	if (unit->getType().isWorker())
 	{
