@@ -27,8 +27,18 @@ namespace HOLD
 		*  +--+--+
 		*
 		*/
-		short quarter[4];	
-		double Total;
+	public:
+		union uQuarter
+		{
+			double u_double;
+			long long u_ll;
+			short g[4];
+			uQuarter() : u_double() {};
+			uQuarter(double value) : u_double(value) {};
+		};
+		uQuarter quarter;
+		//short quarter[4];	
+		//double Total;
 
 	public:
 
@@ -41,11 +51,16 @@ namespace HOLD
 
 		Grid();
 
-		Grid(int sameValue = 0);
+		explicit Grid(int sameValue);
 
-		Grid(short sameValue = 0);
+		explicit Grid(short sameValue);
 
-		Grid(short LeftTop = 0, short RightTop = 0, short LeftBot = 0, short RightBot = 0);
+		explicit Grid(short LeftTop, short RightTop = 0, short LeftBot = 0, short RightBot = 0);
+
+		Grid(double grid);
+
+		~Grid() {};
+
 
 		void SetLeftTop(short value = 0);
 		void SetRightTop(short value = 0);
@@ -57,11 +72,17 @@ namespace HOLD
 		short GetLeftBot() const;
 		short GetRightBot() const;
 
-		short* GetQuarters();
+		//short* GetQuarters();
 
 		int GetTotal();
 
 		bool IsAllSame();
+
+		bool static IsAllSame(double& grid);
+		short static GetLeftTop(double& grid);
+		short static GetRightTop(double& grid);
+		short static GetLeftBot(double& grid);
+		short static GetRightBot(double& grid);
 
 
 

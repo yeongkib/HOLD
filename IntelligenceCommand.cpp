@@ -58,7 +58,7 @@ namespace HOLD
 	* 4.
 	*/
 
-	BWAPI::Position FindMostSafetyZone_Attack(std::vector<Grid> &inf_map, BWAPI::Position pos, BWAPI::Position& dir, bool ground = false)
+	BWAPI::Position FindMostSafetyZone_Attack(std::array<double, 256*256> &inf_map, BWAPI::Position pos, BWAPI::Position& dir, bool ground = false)
 	{
 		std::vector<WalkPosition> candidates;
 
@@ -72,7 +72,6 @@ namespace HOLD
 		*  | 2| 3|	   +-+-+-+
 		*  |  |  |	   |5|6|7|
 		*  +--+--+	   +-+-+-+
-		*
 		*
 		* case 0 : x < 0 && y < 0
 		* -> include 0,1,3
@@ -177,7 +176,7 @@ namespace HOLD
 
 
 	//todo : use astar within 2tile size, or fix it!!!!!!!!!!!!!!!!!!!!!!
-	BWAPI::Position FindMostSafetyZone_Flee(std::vector<Grid> &inf_map, BWAPI::Position pos, bool ground = false)
+	BWAPI::Position FindMostSafetyZone_Flee(std::array<double, 256*256> &inf_map, BWAPI::Position pos, bool ground = false)
 	{
 		std::vector<WalkPosition> candidates;
 
@@ -260,6 +259,18 @@ namespace HOLD
 
 	IntelligenceCommand::IntelligenceCommand() : m_idStack(0), mapWidth(0), mapHeight(0), runflag(true)
 	{
+		//vulGround.fill(Grid(0));
+		//vulGround = std::array<Grid, 256 * 256>();
+		/*opinfluenceGround{};
+		opinfluenceAir{};
+		influenceGround{};
+		influenceAir{};
+		tensionGround{};
+		tensionAir{};
+		tensionTotal{};
+		vulGround{};
+		vulAir{};
+		vulTotal{};*/
 	}
 
 
@@ -347,7 +358,6 @@ namespace HOLD
 			BWEM::utils::really_remove(enemyBaseCandidate, myStartingPos);
 
 			//https://stackoverflow.com/questions/6989100/sort-points-in-clockwise-order
-
 			TilePosition center = TilePosition(Broodwar->mapWidth() / 2, Broodwar->mapHeight() / 2);
 			auto less = [&center](TilePosition a, TilePosition b)->bool
 			{
@@ -376,10 +386,6 @@ namespace HOLD
 			};
 			if (enemyBaseCandidate.size() > 2)
 			std::sort(begin(startingLocations), end(startingLocations), less);
-
-
-
-
 		}
 
 		InitInfluenceMaps();
@@ -393,78 +399,30 @@ namespace HOLD
 		{
 			UpdateLifePoint();
 
-			//int order = 1;
-			//for (auto it = begin(startingLocations); ; ++it, ++order)
-			//{
-			//	if (order == startingLocations.size())
-			//	{
-			//		Position from{ *it };
-			//		Position to{ *begin(startingLocations) };
+			for (const BWEM::Area & area : theMap.Areas())
+			{
+				for (const BWEM::Base & base : area.Bases())
+				{
+					/*if (starting.x == base.Location().x
+					&& starting.y == base.Location().y)*/
+					{
+						std::vector<BWEM::Ressource *> AssignedResources(base.Minerals().begin(), base.Minerals().end());
 
-			//		//adjust it to the center position of base
-			//		to += Position{ 64, 48 };
-			//		from += Position{ 64, 48 };
+						
+						//AssignedResources.insert(AssignedRessources.end(), base.Geysers().begin(), base.Geysers().end());
 
-			//		Broodwar->drawLineMap(from, to,
-			//			Colors::White);
-
-			//		// draw triangle
-			//		// dx,dy = arrow line vector
-			//		const double dx = to.x - from.x;
-			//		const double dy = to.y - from.y;
-
-			//		// normalize
-			//		const double length = Sqrt(dx * dx + dy * dy);
-			//		const double unitDx = dx / length;
-			//		const double unitDy = dy / length;
-
-			//		// increase this to get a larger arrow head
-			//		const int arrowHeadBoxSize = 10;
-
-			//		const Position arrowPoint1{
-			//			static_cast<int>(to.x - unitDx * arrowHeadBoxSize - unitDy * arrowHeadBoxSize),
-			//			static_cast<int>(to.y - unitDy * arrowHeadBoxSize + unitDx * arrowHeadBoxSize) };
-			//		const Position arrowPoint2{
-			//			static_cast<int>(to.x - unitDx * arrowHeadBoxSize + unitDy * arrowHeadBoxSize),
-			//			static_cast<int>(to.y - unitDy * arrowHeadBoxSize - unitDx * arrowHeadBoxSize) };
-
-			//		Broodwar->drawTriangleMap(to, arrowPoint1, arrowPoint2,
-			//			Colors::White);
-			//		break;
-			//	}
-
-			//	Position from{ *it };
-			//	Position to{ *std::next(it, 1) };
-
-			//	to += Position{ 64, 48 };
-			//	from += Position{ 64, 48 };
-
-			//	Broodwar->drawLineMap(from, to,
-			//		Colors::White);
-
-			//	// draw triangle
-			//	// dx,dy = arrow line vector
-			//	const double dx = to.x - from.x;
-			//	const double dy = to.y - from.y;
-
-			//	// normalize
-			//	const double length = Sqrt(dx * dx + dy * dy);
-			//	const double unitDx = dx / length;
-			//	const double unitDy = dy / length;
-
-			//	// increase this to get a larger arrow head
-			//	const int arrowHeadBoxSize = 10;
-
-			//	const Position arrowPoint1{
-			//		static_cast<int>(to.x - unitDx * arrowHeadBoxSize - unitDy * arrowHeadBoxSize),
-			//		static_cast<int>(to.y - unitDy * arrowHeadBoxSize + unitDx * arrowHeadBoxSize) };
-			//	const Position arrowPoint2{
-			//		static_cast<int>(to.x - unitDx * arrowHeadBoxSize + unitDy * arrowHeadBoxSize),
-			//		static_cast<int>(to.y - unitDy * arrowHeadBoxSize - unitDx * arrowHeadBoxSize) };
-
-			//	Broodwar->drawTriangleMap(to, arrowPoint1, arrowPoint2,
-			//		Colors::White);
-			//}
+						for (auto &mineral : AssignedResources)
+						{
+							drawBoundary(mineral->Unit());
+						/*distbtwmineral.push_back(std::make_pair<position, float>(mineral->pos(),
+						distance(float(base.center().x) + float(bwapi::unittypes::terran_command_center.tilesize().x) * 0.5f,
+						float(base.center().y) + float(bwapi::unittypes::terran_command_center.tilesize().y) * 0.5f,
+						float(mineral->pos().x), float(mineral->pos().y), float(bwapi::unittypes::terran_command_center.tilewidth()), float(bwapi::unittypes::terran_command_center.tileheight()))));
+*/
+						}
+					}
+				}
+			}
 		}
 
 		//if (BWAPI::Broodwar->getFrameCount() % 4)
@@ -489,10 +447,6 @@ namespace HOLD
 					}
 				}
 			}
-
-			/*for (const auto &us : UnitDataSets[Broodwar->self()])
-			{
-			for (const auto &u : us.second.m_units)*/
 
 			Position attackPosition{};
 
@@ -536,8 +490,9 @@ namespace HOLD
 					continue;
 
 				UpdateInfluences(u);
-				//drawBoundary(u);
-				//drawWeaponCooldown(u);
+				drawBoundary(u);
+
+				drawWeaponCooldown(u);
 				/*Broodwar->drawTextMap(u->getPosition(), "%d", UnitInfo(u).GetAverageHP());*/
 
 
@@ -697,7 +652,9 @@ namespace HOLD
 												continue;
 											float cooldown = static_cast<float>(u->getGroundWeaponCooldown()) / static_cast<float>(u->getType().groundWeapon().damageCooldown());
 											if(cooldown < 0.5f)
-											u->move(FindMostSafetyZone_Flee(u->getType().isFlyer() ? opinfluenceAir : opinfluenceGround, u->getPosition(), u->getType().isFlyer()));
+												u->move(FindMostSafetyZone_Flee(u->getType().isFlyer() ? *GetGridMap(std::string{ "opinfluenceAir" }) : *GetGridMap(std::string{ "opinfluenceGround" }), u->getPosition(), u->getType().isFlyer()));
+
+											//u->move(FindMostSafetyZone_Flee(u->getType().isFlyer() ? opinfluenceAir : opinfluenceGround, u->getPosition(), u->getType().isFlyer()));
 										}
 
 
@@ -706,123 +663,6 @@ namespace HOLD
 							
 					}
 				}
-
-
-
-				//// If the unit is a worker unit
-				//if (u->getType().isWorker())
-				//{
-				//	//if unit is on the line, call return to cargo, and set it as true
-				//	// if our worker is idle
-				//	if (u->isIdle())
-				//	{
-				//		// Order workers carrying a resource to return them to the center,
-				//		// otherwise find a mineral patch to harvest.
-				//		if (u->isCarryingGas() || u->isCarryingMinerals())
-				//		{
-				//			//	u->issueCommand(UnitCommand::returnCargo(u));
-				//		}
-				//		else if (!u->getPowerUp())  // The worker cannot harvest anything if it
-				//		{                             // is carrying a powerup such as a flag
-				//									  // Harvest from the nearest mineral patch or gas refinery
-				//									  //if (!u->gather(u->getClosestUnit(IsMineralField || IsRefinery)))
-				//									  //{
-				//									  //	// If the call fails, then print the last error message
-				//									  //	Broodwar << Broodwar->getLastError() << std::endl;
-				//									  //}
-
-				//		} // closure: has no powerup
-				//	} // closure: if idle
-				//	  // if our worker is idle
-				//	if (Orders::ReturnMinerals == u->getOrder()
-				//		&& !u->getClientInfo(std::hash<std::string>{}(std::string("boost"))))
-				//	{
-				//		for (auto dl : DiagonalLineOfBase)
-				//		{
-				//			int i = 0;
-				//			int offset = 2;
-				//			i += isPointOnLine(dl.first, dl.second, Position(u->getLeft() - offset, u->getTop() - offset));
-
-				//			if (1 == i)
-				//			{
-				//				int left = u->getLeft() - offset;
-				//				int top = u->getTop() - offset;
-				//				BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
-				//				{
-				//					BWAPI::Broodwar->drawCircleMap(left, top, 3, BWAPI::Colors::Purple, true);
-				//					//BWAPI::Broodwar->drawCircleScreen(400, 200, 5, Colors::Black, true);
-				//				},
-				//					[=](BWAPI::Game*) {return true; },  // condition
-				//					30);  // frames to run
-				//			}
-				//			i += isPointOnLine(dl.first, dl.second, Position(u->getRight() + offset, u->getTop() - offset)) * 10;
-				//			if (10 <= i)
-				//			{
-				//				int right = u->getRight() + offset;
-				//				int top = u->getTop() - offset;
-				//				BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
-				//				{
-				//					BWAPI::Broodwar->drawCircleMap(right, top, 3, BWAPI::Colors::Purple, true);
-				//					//BWAPI::Broodwar->drawCircleScreen(400, 200, 5, Colors::Black, true);
-				//				},
-				//					[=](BWAPI::Game*) {return true; },  // condition
-				//					30);  // frames to run
-				//			}
-				//			i += isPointOnLine(dl.first, dl.second, Position(u->getLeft() - offset, u->getBottom() + offset)) * 100;
-				//			if (100 <= i)
-				//			{
-				//				int left = u->getLeft() - offset;
-				//				int bot = u->getBottom() + offset;
-				//				BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
-				//				{
-				//					BWAPI::Broodwar->drawCircleMap(left, bot, 3, BWAPI::Colors::Purple, true);
-				//					//BWAPI::Broodwar->drawCircleScreen(400, 200, 5, Colors::Black, true);
-				//				},
-				//					[=](BWAPI::Game*) {return true; },  // condition
-				//					30);  // frames to run
-				//			}
-				//			i += isPointOnLine(dl.first, dl.second, Position(u->getRight() + offset, u->getBottom() + offset)) * 1000;
-				//			if (1000 <= i)
-				//			{
-				//				int right = u->getRight() + offset;
-				//				int bot = u->getBottom() + offset;
-				//				BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
-				//				{
-				//					BWAPI::Broodwar->drawCircleMap(right, bot, 3, BWAPI::Colors::Purple, true);
-				//					//BWAPI::Broodwar->drawCircleScreen(400, 200, 5, Colors::Black, true);
-				//				},
-				//					[=](BWAPI::Game*) {return true; },  // condition
-				//					30);  // frames to run
-				//			}
-				//			/*i += isPointOnLine(dl.first, dl.second, Position(u->getLeft() , u->getTop() ));
-				//			i += isPointOnLine(dl.first, dl.second, Position(u->getRight() , u->getTop() ));
-				//			i += isPointOnLine(dl.first, dl.second, Position(u->getLeft() , u->getBottom() ));
-				//			i += isPointOnLine(dl.first, dl.second, Position(u->getRight() , u->getBottom() ));*/
-
-				//			if (1 == i
-				//				|| 10 == i
-				//				|| 100 == i
-				//				|| 1000 == i
-				//				)//|| 1 <= i)
-				//			{
-				//				u->issueCommand(UnitCommand::returnCargo(u));
-				//				u->setClientInfo(true, std::hash<std::string>{}(std::string("boost")));
-				//				BWAPI::Broodwar->registerEvent([=](BWAPI::Game*)
-				//				{
-				//					BWAPI::Broodwar->drawBoxMap(u->getLeft(), u->getTop(), u->getRight(), u->getBottom(), BWAPI::Colors::White, true);
-				//					BWAPI::Broodwar->drawTextScreen(400, 200, "%c%d", Colors::Black, "boost on");
-				//				},
-				//					[=](BWAPI::Game*) {return true; },  // condition
-				//					30);  // frames to run
-				//			}
-				//		}
-				//	}
-				//	if (!u->isCarryingMinerals()
-				//		&& u->getClientInfo(std::hash<std::string>{}(std::string("boost"))))
-				//	{
-				//		u->setClientInfo(false, std::hash<std::string>{}(std::string("boost")));
-				//	}
-				//}
 
 				//todo : uncomment
 				if (runflag)
@@ -1118,8 +958,8 @@ namespace HOLD
 				Broodwar->drawTextScreen(5, uy, "%s %d", lists.c_str(), i.size());
 				uy += 10;
 			}
-			for(auto unit : i)
-			Broodwar->drawTextMap(unit->m_unit->getPosition(), "%.1f", unit->GetAverageHP(12));
+			//for(auto unit : i)
+			//Broodwar->drawTextMap(unit->m_unit->getPosition(), "%.1f", unit->GetAverageHP(12));
 			/*auto i = Units[Broodwar->self()].find(lists);
 			if (i != Units[Broodwar->self()].end())
 			{
@@ -1178,16 +1018,16 @@ namespace HOLD
 		{
 		Vgrid().swap(grid.second);
 		}*/
-		Vgrid().swap(opinfluenceGround);
-		Vgrid().swap(opinfluenceAir);
-		Vgrid().swap(influenceGround);
-		Vgrid().swap(influenceAir);
-		Vgrid().swap(tensionGround);
-		Vgrid().swap(tensionAir);
-		Vgrid().swap(tensionTotal);
-		Vgrid().swap(vulGround);
-		Vgrid().swap(vulAir);
-		Vgrid().swap(vulTotal);
+		//Vgrid().swap(opinfluenceGround);
+		//Vgrid().swap(opinfluenceAir);
+		//Vgrid().swap(influenceGround);
+		//Vgrid().swap(influenceAir);
+		//Vgrid().swap(tensionGround);
+		//Vgrid().swap(tensionAir);
+		//Vgrid().swap(tensionTotal);
+		//Vgrid().swap(vulGround);
+		//Vgrid().swap(vulAir);
+		//Vgrid().swap(vulTotal);
 	}
 	void IntelligenceCommand::ProcessMessage(Message* message)
 	{
@@ -1209,6 +1049,27 @@ namespace HOLD
 
 	void IntelligenceCommand::UpdateGrid()
 	{
+		std::transform(grids[std::string{ "tensionGround" }].begin(), grids[std::string{ "tensionGround" }].end(), grids[std::string{ "influenceGround" }].begin(),
+			grids[std::string{ "vulGround" }].begin(), [](double &first, double &second)->double
+		{
+			return Grid(first - HOLD::abs(second)).quarter.u_double;
+			//return first - HOLD::abs(second);
+		});
+
+		std::transform(grids[std::string{ "tensionAir" }].begin(), grids[std::string{ "tensionAir" }].end(), grids[std::string{ "influenceAir" }].begin(),
+			grids[std::string{ "vulAir" }].begin(), [](double& first, double &second)->double
+		{
+			return Grid(first - HOLD::abs(second)).quarter.u_double;
+			//return first - HOLD::abs(second);
+		});
+
+		std::transform(grids[std::string{ "vulGround" }].begin(), grids[std::string{ "vulGround" }].end(), grids[std::string{ "vulAir" }].begin(),
+			grids[std::string{ "vulTotal" }].begin(), [](double& first, double &second)->double
+		{
+			return Grid(first + second).quarter.u_double;
+			//return first - HOLD::abs(second);
+		});
+
 		/*std::transform(grids[std::string{ "tensionGround" }].begin(), grids[std::string{ "tensionGround" }].end(), grids[std::string{ "influenceGround" }].begin(),
 		grids[std::string{ "vulGround" }].begin(), [](Grid &first, Grid &second)->Grid
 		{
@@ -1223,6 +1084,8 @@ namespace HOLD
 
 		std::transform(grids[std::string{ "vulGround" }].begin(), grids[std::string{ "vulGround" }].end(), grids[std::string{ "vulAir" }].begin(),
 		grids[std::string{ "vulTotal"}].begin(), std::plus<Grid>());*/
+
+
 		/*std::transform(tensionGround.begin(), tensionGround.end(), influenceGround.begin(),
 		vulGround.begin(), [](Grid &first, Grid &second)->Grid
 		{
@@ -1237,7 +1100,7 @@ namespace HOLD
 
 		std::transform(vulGround.begin(), vulGround.end(), vulAir.begin(),
 		vulTotal.begin(), std::plus<Grid>());*/
-		std::transform(begin(tensionGround), end(tensionGround), begin(influenceGround),
+		/*std::transform(begin(tensionGround), end(tensionGround), begin(influenceGround),
 			vulGround.begin(), [](Grid &first, Grid &second)->Grid
 		{
 			return first - HOLD::abs(second);
@@ -1250,74 +1113,25 @@ namespace HOLD
 		});
 
 		std::transform(vulGround.begin(), vulGround.end(), vulAir.begin(),
-			vulTotal.begin(), std::plus<Grid>());
+			vulTotal.begin(), std::plus<Grid>());*/
 	}
 
 	Vgrid* IntelligenceCommand::GetGridMap(const std::string& name)
 	{
 		//todo : assert if not found
 
-		/*auto it = grids.find(name);
+		auto it = grids.find(name);
 		if (it != grids.end()) {
-		return &it->second;
-		}*/
+			return &it->second;
+		}
 
 		return nullptr;
 	}
-
-	//template<typename T>
-	//void IntelligenceCommand::SetValues(Grid & cell, int targetpos_x, int targetpos_y, int  curpos_x, int  curpos_y, const int & damage, T op, const int& range)
-	//{
-	//	/*
-	//	* input : each cell, and curret position and target position
-	//	* loop for each quarter
-	//	*/
-
-	//	auto CalInfluence = [](short & cell, int targetpos_x, int targetpos_y, int curpos_x, int curpos_y, const int & damage, auto op, auto & range)
-	//	{
-	//		// make influence fall of with distance:
-	//		float dist = Math::Distance(Vector2(curpos_x, curpos_y), Vector2(targetpos_x, targetpos_y));
-	//		//dist = fmod(x, 32.f);
-
-	//		//if (dist > static_cast<float>(range * 1.3))
-	//		//if(Position(curpos_x, curpos_y).getApproxDistance(Position(targetpos_x, targetpos_y)) > range * 1.1414f)
-	//		//	return;
-
-	//		int distinp = Position(curpos_x, curpos_y).getApproxDistance(Position(targetpos_x, targetpos_y));
-	//		/*	if (distinp >= range + 8)
-	//		return;*/
-
-
-	//		if (distinp <= range + 8)
-	//		{
-	//			if (distinp <= range)
-	//			{
-	//				//Broodwar->drawTextMap(targetpos_x, targetpos_y, "%d", static_cast<int>( static_cast<float>(damage) / dist));
-
-	//				cell = op(cell, static_cast<short>(damage));
-	//				return;
-	//			}
-	//			//Broodwar->drawTextMap(targetpos_x, targetpos_y, "%2.0f", dist);
-
-	//			dist /= 32.f;
-	//			if (dist <= 1.f)
-	//				dist = 1.f;
-	//			cell = op(cell, static_cast<short>(static_cast<float>(damage) / dist));
-	//			return;
-	//		}
-	//	};
-
-	//	for (char i = 0; i < 4; ++i)
-	//	{
-	//		CalInfluence(cell[i], targetpos_x * 32 + Neighbours_Walk[i].x + curpos_x % 4, targetpos_y * 32 + Neighbours_Walk[i].y + curpos_y % 4, curpos_x, curpos_y, damage, op, range);
-	//	}
-	//}
 
 	void IntelligenceCommand::UpdateBulletInfo()
 	{
 		for (auto &b : Broodwar->getBullets())
 		{
-
 			Position p = b->getPosition();
 			double velocityX = b->getVelocityX();
 			double velocityY = b->getVelocityY();
@@ -1341,170 +1155,21 @@ namespace HOLD
 			//	UpdateInfluences(b);
 			//}
 		}
-
-
-		//{
-		//	int xPos = b->getPosition().x;// / 32;
-		//	int yPos = b->getPosition().y;// / 32;
-		//	float groundRadius = 50;
-		//	float airRadius = 50;
-
-		//	int groundStartX = static_cast<int>(floor((xPos - groundRadius) / 32.f));
-		//	int groundStartY = static_cast<int>(floor((yPos - groundRadius) / 32.f));
-
-		//	int airStartX = static_cast<int>(floor((xPos - airRadius) / 32.f));
-		//	int airStartY = static_cast<int>(floor((yPos - airRadius) / 32.f));
-
-		//	int groundEndX = static_cast<int>(ceil((xPos + groundRadius) / 32.f));
-		//	int groundEndY = static_cast<int>(ceil((yPos + groundRadius) / 32.f));
-
-		//	int airEndX = static_cast<int>(ceil((xPos + airRadius) / 32.f));
-		//	int airEndY = static_cast<int>(ceil((yPos + airRadius) / 32.f));
-
-		//	//need to clamp
-		//	groundStartX = Math::Clamp(groundStartX, 0, mapWidth - 1);
-		//	groundStartY = Math::Clamp(groundStartY, 0, mapHeight - 1);
-		//	groundEndX = Math::Clamp(groundEndX, 0, mapWidth - 1);
-		//	groundEndY = Math::Clamp(groundEndY, 0, mapHeight - 1);
-
-		//	airStartX = Math::Clamp(airStartX, 0, mapWidth - 1);
-		//	airStartY = Math::Clamp(airStartY, 0, mapHeight - 1);
-		//	airEndX = Math::Clamp(airEndX, 0, mapWidth - 1);
-		//	airEndY = Math::Clamp(airEndY, 0, mapHeight - 1);
-
-		//	int basedamage = 8;
-		//	int life = b->getRemoveTimer();
-		//	int total_damage = basedamage * life;
-
-		//	for (int Y = groundStartY; Y < groundEndY; ++Y)
-		//	{
-		//		for (int X = groundStartX; X < groundEndX; ++X)
-		//		{
-		//			if (u->getPlayer() == Broodwar->self())
-		//			{
-		//				/*SetValues(GetGridMap(std::string{ "influenceGround" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);
-		//				SetValues(GetGridMap(std::string{ "tensionGround" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);
-		//				SetValues(GetGridMap(std::string{ "tensionTotal" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);*/
-		//				SetValues(influenceGround.at(Y * mapHeight + X), X, Y, xPos, yPos, total_damage, std::plus<short>(), groundRadius);
-		//				SetValues(tensionGround.at(Y * mapHeight + X), X, Y, xPos, yPos, total_damage, std::plus<short>(), groundRadius);
-		//				SetValues(tensionTotal.at(Y * mapHeight + X), X, Y, xPos, yPos, total_damage, std::plus<short>(), groundRadius);
-		//			}
-		//			else //if enemy
-		//			{
-		//				/*SetValues(GetGridMap(std::string{ "opinfluenceGround" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);
-		//				SetValues(GetGridMap(std::string{ "influenceGround" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::minus<short>(), groundRadius);
-		//				SetValues(GetGridMap(std::string{ "tensionGround" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);
-		//				SetValues(GetGridMap(std::string{ "tensionTotal" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);*/
-		//				SetValues(opinfluenceGround.at(Y * mapHeight + X), X, Y, xPos, yPos, total_damage, std::plus<short>(), groundRadius);
-		//				SetValues(influenceGround.at(Y * mapHeight + X), X, Y, xPos, yPos, total_damage, std::minus<short>(), groundRadius);
-		//				SetValues(tensionGround.at(Y * mapHeight + X), X, Y, xPos, yPos, total_damage, std::plus<short>(), groundRadius);
-		//				SetValues(tensionTotal.at(Y * mapHeight + X), X, Y, xPos, yPos, total_damage, std::plus<short>(), groundRadius);
-		//			}
-		//		}
-		//	}
-		//	}
-		//	if (airWeapon.damageAmount())
-		//	{
-		//		int level = u->getPlayer()->getUpgradeLevel(airWeapon.upgradeType());
-		//		int damage = (airWeapon.damageAmount() + level * airWeapon.damageBonus());// *groundWeapon.damageFactor(); //
-		//																				  //int damage = static_cast<int>(static_cast<double>((airWeapon.damageAmount() + level * airWeapon.damageBonus())) * (static_cast<double>(airWeapon.damageCooldown() - u->getAirWeaponCooldown()) / static_cast<double>(airWeapon.damageCooldown())));
-
-		//		if (damage)
-		//			for (int Y = airStartY; Y < airEndY; ++Y)
-		//			{
-		//				for (int X = airStartX; X < airEndX; ++X)
-		//				{
-		//					if (u->getPlayer() == Broodwar->self())
-		//					{
-		//						/*SetValues(GetGridMap(std::string{ "influenceAir" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
-		//						SetValues(GetGridMap(std::string{ "tensionAir" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
-		//						SetValues(GetGridMap(std::string{ "tensionTotal" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);*/
-		//						SetValues(influenceAir.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
-		//						SetValues(tensionAir.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
-		//						SetValues(tensionTotal.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
-		//					}
-		//					else //if enemy
-		//					{
-		//						/*SetValues(GetGridMap(std::string{ "opinfluenceAir" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
-		//						SetValues(GetGridMap(std::string{ "influenceGround" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::minus<short>(), airRadius);
-		//						SetValues(GetGridMap(std::string{ "tensionAir" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
-		//						SetValues(GetGridMap(std::string{ "tensionTotal" })->at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);*/
-		//						SetValues(opinfluenceAir.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
-		//						SetValues(influenceGround.at(Y * mapHeight + X), X, Y, x, y, damage, std::minus<short>(), airRadius);
-		//						SetValues(tensionAir.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
-		//						SetValues(tensionTotal.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
-		//					}
-		//				}
-		//			}
-		//	}
-		//	}
 	}
 	void IntelligenceCommand::UpdateInfluences(const Bullet b)
 	{
 		if (b->getType() == BulletTypes::Enum::Psionic_Storm)
 		{
-			constexpr int storms[61] = { 14,
-				14,
-				14,
-				14,
-				14,
-				14,
-				14,
-				14,
-				28,
-				28,
-				28,
-				28,
-				28,
-				28,
-				28,
-				42,
-				42,
-				42,
-				42,
-				42,
-				42,
-				42,
-				56,
-				56,
-				56,
-				56,
-				56,
-				56,
-				56,
-				70,
-				70,
-				70,
-				70,
-				70,
-				70,
-				70,
-				84,
-				84,
-				84,
-				84,
-				84,
-				84,
-				84,
-				84,
-				84,
-				84,
-				84,
-				84,
-				84,
-				84,
-				98,
-				98,
-				98,
-				98,
-				98,
-				98,
-				98,
-				112,
-				112,
-				112,
-				112
-			};
+			constexpr int storms[61] = { 
+											14, 14, 14, 14, 14, 14, 14, 14,
+											28, 28, 28, 28, 28, 28, 28,
+											42, 42, 42, 42, 42, 42, 42,
+											56, 56, 56, 56, 56, 56, 56,
+											70, 70, 70, 70, 70, 70, 70,
+											84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84,
+											98, 98, 98, 98, 98, 98, 98,
+											112, 112, 112, 112
+										};
 			int xPos = b->getPosition().x;// / 32;
 			int yPos = b->getPosition().y;// / 32;
 			float Radius = 50;
@@ -1531,14 +1196,23 @@ namespace HOLD
 			{
 				for (int X = StartX; X < EndX; ++X)
 				{
-					SetInfluence(X, Y, xPos, yPos, total_damage, std::plus<short>(), 0, Radius,
+					/*SetInfluence(X, Y, xPos, yPos, total_damage, std::plus<short>(), 0, Radius,
 						5, &opinfluenceGround.at(Y * mapHeight + X),
 						&tensionGround.at(Y * mapHeight + X),
 						&tensionTotal.at(Y * mapHeight + X),
 						&opinfluenceAir.at(Y * mapHeight + X),
 						&tensionAir.at(Y * mapHeight + X));
 					SetInfluence(X, Y, xPos, yPos, total_damage, std::minus<short>(), 0, Radius,
-						1, &influenceGround.at(Y * mapHeight + X));
+						1, &influenceGround.at(Y * mapHeight + X));*/
+
+					SetInfluence(X, Y, xPos, yPos, total_damage, std::plus<short>(), 0, Radius,
+						5, &GetGridMap(std::string{ "opinfluenceGround" })->at(Y * mapHeight + X),
+						&GetGridMap(std::string{ "tensionGround" })->at(Y * mapHeight + X),
+						&GetGridMap(std::string{ "tensionTotal" })->at(Y * mapHeight + X),
+						&GetGridMap(std::string{ "opinfluenceAir" })->at(Y * mapHeight + X),
+						&GetGridMap(std::string{ "tensionAir" })->at(Y * mapHeight + X));
+					SetInfluence(X, Y, xPos, yPos, total_damage, std::minus<short>(), 0, Radius,
+						1, &GetGridMap(std::string{ "influenceGround" })->at(Y * mapHeight + X));
 				}
 			}
 		}
@@ -1614,14 +1288,24 @@ namespace HOLD
 						SetValues(influenceGround.at(Y * mapHeight + X), X, Y, x, y, damage, std::minus<short>(), groundRadius);
 						SetValues(tensionGround.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);
 						SetValues(opinfluenceGround.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);*/
-						SetInfluence(X, Y, x, y, damage, std::plus<short>(), 0, groundRadius,
+						
+						/*SetInfluence(X, Y, x, y, damage, std::plus<short>(), 0, groundRadius,
 							4, &opinfluenceGround.at(Y * mapHeight + X),
 							&opinfluenceAir.at(Y * mapHeight + X),
 							&tensionGround.at(Y * mapHeight + X),
 							&opinfluenceGround.at(Y * mapHeight + X));
 						SetInfluence(X, Y, x, y, damage, std::minus<short>(), 0, groundRadius,
 							2, &influenceGround.at(Y * mapHeight + X),
-							&influenceGround.at(Y * mapHeight + X));
+							&influenceGround.at(Y * mapHeight + X));*/
+
+						SetInfluence(X, Y, x, y, damage, std::plus<short>(), 0, groundRadius,
+							4, &GetGridMap(std::string{ "opinfluenceGround" })->at(Y * mapHeight + X),
+							&GetGridMap(std::string{ "opinfluenceAir" })->at(Y * mapHeight + X),
+							&GetGridMap(std::string{ "tensionGround" })->at(Y * mapHeight + X),
+							&GetGridMap(std::string{ "opinfluenceGround" })->at(Y * mapHeight + X));
+						SetInfluence(X, Y, x, y, damage, std::minus<short>(), 0, groundRadius,
+							2, &GetGridMap(std::string{ "influenceGround" })->at(Y * mapHeight + X),
+							&GetGridMap(std::string{ "influenceGround" })->at(Y * mapHeight + X));
 					}
 				}
 			}
@@ -1699,10 +1383,16 @@ namespace HOLD
 								/*SetValues(influenceGround.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);
 								SetValues(tensionGround.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);
 								SetValues(tensionTotal.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);*/
-								SetInfluence(X, Y, x, y, damage, std::plus<short>(), groundWeapon.minRange(), groundRadius,
+								
+								/*SetInfluence(X, Y, x, y, damage, std::plus<short>(), groundWeapon.minRange(), groundRadius,
 									3, &influenceGround.at(Y * mapHeight + X),
 									&tensionGround.at(Y * mapHeight + X),
-									&tensionTotal.at(Y * mapHeight + X));
+									&tensionTotal.at(Y * mapHeight + X));*/
+
+								SetInfluence(X, Y, x, y, damage, std::plus<short>(), groundWeapon.minRange(), groundRadius,
+									3, &GetGridMap(std::string{ "influenceGround" })->at(Y * mapHeight + X),
+									&GetGridMap(std::string{ "tensionGround" })->at(Y * mapHeight + X),
+									&GetGridMap(std::string{ "tensionTotal" })->at(Y * mapHeight + X));
 							}
 							else //if enemy
 							{
@@ -1714,12 +1404,19 @@ namespace HOLD
 								SetValues(influenceGround.at(Y * mapHeight + X), X, Y, x, y, damage, std::minus<short>(), groundRadius);
 								SetValues(tensionGround.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);
 								SetValues(tensionTotal.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), groundRadius);*/
-								SetInfluence(X, Y, x, y, damage, std::plus<short>(), groundWeapon.minRange(), groundRadius,
+								
+								/*SetInfluence(X, Y, x, y, damage, std::plus<short>(), groundWeapon.minRange(), groundRadius,
 									3, &opinfluenceGround.at(Y * mapHeight + X),
 									&tensionGround.at(Y * mapHeight + X),
 									&tensionTotal.at(Y * mapHeight + X));
 								SetInfluence(X, Y, x, y, damage, std::minus<short>(), groundWeapon.minRange(), groundRadius,
-									1, &influenceGround.at(Y * mapHeight + X));
+									1, &influenceGround.at(Y * mapHeight + X));*/
+								SetInfluence(X, Y, x, y, damage, std::plus<short>(), groundWeapon.minRange(), groundRadius,
+									3, &GetGridMap(std::string{ "opinfluenceGround" })->at(Y * mapHeight + X),
+									&GetGridMap(std::string{ "tensionGround" })->at(Y * mapHeight + X),
+									&GetGridMap(std::string{ "tensionTotal" })->at(Y * mapHeight + X));
+								SetInfluence(X, Y, x, y, damage, std::minus<short>(), groundWeapon.minRange(), groundRadius,
+									1, &GetGridMap(std::string{ "influenceGround" })->at(Y * mapHeight + X));
 							}
 						}
 					}
@@ -1744,10 +1441,16 @@ namespace HOLD
 								/*SetValues(influenceAir.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
 								SetValues(tensionAir.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
 								SetValues(tensionTotal.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);*/
-								SetInfluence(X, Y, x, y, damage, std::plus<short>(), airWeapon.minRange(), airRadius,
+								
+								/*SetInfluence(X, Y, x, y, damage, std::plus<short>(), airWeapon.minRange(), airRadius,
 									3, &influenceAir.at(Y * mapHeight + X),
 									&tensionAir.at(Y * mapHeight + X),
-									&tensionTotal.at(Y * mapHeight + X));
+									&tensionTotal.at(Y * mapHeight + X));*/
+
+								SetInfluence(X, Y, x, y, damage, std::plus<short>(), airWeapon.minRange(), airRadius,
+									3, &GetGridMap(std::string{ "influenceAir" })->at(Y * mapHeight + X),
+									&GetGridMap(std::string{ "tensionAir" })->at(Y * mapHeight + X),
+									&GetGridMap(std::string{ "tensionTotal" })->at(Y * mapHeight + X));
 							}
 							else //if enemy
 							{
@@ -1759,12 +1462,20 @@ namespace HOLD
 								SetValues(influenceGround.at(Y * mapHeight + X), X, Y, x, y, damage, std::minus<short>(), airRadius);
 								SetValues(tensionAir.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);
 								SetValues(tensionTotal.at(Y * mapHeight + X), X, Y, x, y, damage, std::plus<short>(), airRadius);*/
-								SetInfluence(X, Y, x, y, damage, std::plus<short>(), airWeapon.minRange(), airRadius,
+								
+								/*SetInfluence(X, Y, x, y, damage, std::plus<short>(), airWeapon.minRange(), airRadius,
 									3, &opinfluenceAir.at(Y * mapHeight + X),
 									&tensionAir.at(Y * mapHeight + X),
 									&tensionTotal.at(Y * mapHeight + X));
 								SetInfluence(X, Y, x, y, damage, std::minus<short>(), airWeapon.minRange(), airRadius,
-									1, &influenceAir.at(Y * mapHeight + X));
+									1, &influenceAir.at(Y * mapHeight + X));*/
+
+								SetInfluence(X, Y, x, y, damage, std::plus<short>(), airWeapon.minRange(), airRadius,
+									3, &GetGridMap(std::string{ "opinfluenceAir" })->at(Y * mapHeight + X),
+									&GetGridMap(std::string{ "tensionAir" })->at(Y * mapHeight + X),
+									&GetGridMap(std::string{ "tensionTotal" })->at(Y * mapHeight + X));
+								SetInfluence(X, Y, x, y, damage, std::minus<short>(), airWeapon.minRange(), airRadius,
+									1, &GetGridMap(std::string{ "influenceAir" })->at(Y * mapHeight + X));
 							}
 						}
 					}
@@ -1774,38 +1485,17 @@ namespace HOLD
 
 	void IntelligenceCommand::InitInfluenceMaps()
 	{
-		// should know the diffrence btw {} and ()
-		/*grids[std::string{ "opinfluenceGround" }] = Vgrid(mapHeight * mapWidth, Grid{ 0 });
-		grids[std::string{ "opinfluenceAir" }] = Vgrid(mapHeight * mapWidth, Grid{ 0 });
-		grids[std::string{ "influenceGround" }] = Vgrid(mapHeight * mapWidth, Grid{ 0 });
-		grids[std::string{ "influenceAir" }] = Vgrid(mapHeight * mapWidth, Grid{ 0 });
-		grids[std::string{ "tensionGround" }] = Vgrid(mapHeight * mapWidth, Grid{ 0 });
-		grids[std::string{ "tensionAir" }] = Vgrid(mapHeight * mapWidth, Grid{ 0 });
-		grids[std::string{ "tensionTotal" }] = Vgrid(mapHeight * mapWidth, Grid{ 0 });
-		grids[std::string{ "vulGround" }] = Vgrid(mapHeight * mapWidth, Grid{ 0 });
-		grids[std::string{ "vulAir" }] = Vgrid(mapHeight * mapWidth, Grid{ 0 });
-		grids[std::string{ "vulTotal" }] = Vgrid(mapHeight * mapWidth, Grid{ 0 });*/
-		InitMap.resize(mapHeight * mapWidth, Grid{ 0 });
-
-		opinfluenceGround.resize(mapHeight * mapWidth, Grid{ 0 });
-
-		opinfluenceAir.resize(mapHeight * mapWidth, Grid{ 0 });
-
-		influenceGround.resize(mapHeight * mapWidth, Grid{ 0 });
-
-		influenceAir.resize(mapHeight * mapWidth, Grid{ 0 });
-
-		tensionGround.resize(mapHeight * mapWidth, Grid{ 0 });
-
-		tensionAir.resize(mapHeight * mapWidth, Grid{ 0 });
-
-		tensionTotal.resize(mapHeight * mapWidth, Grid{ 0 });
-
-		vulGround.resize(mapHeight * mapWidth, Grid{ 0 });
-
-		vulAir.resize(mapHeight * mapWidth, Grid{ 0 });
-
-		vulTotal.resize(mapHeight * mapWidth, Grid{ 0 });
+		std::array<double, 256 * 256> maps;
+		grids[std::string{"opinfluenceGround"}] = maps;
+		grids[std::string{"opinfluenceAir"}]    = maps;
+		grids[std::string{"influenceGround"}]   = maps;
+		grids[std::string{"influenceAir"}]      = maps;
+		grids[std::string{"tensionGround"}]     = maps;
+		grids[std::string{"tensionAir"}]        = maps;
+		grids[std::string{"tensionTotal"}]      = maps;
+		grids[std::string{"vulGround"}]         = maps;
+		grids[std::string{"vulAir"}]            = maps;
+		grids[std::string{"vulTotal"}]          = maps;
 	}
 
 	void IntelligenceCommand::ClearInfluenceMaps()
@@ -1821,17 +1511,11 @@ namespace HOLD
 		memset(&grids[std::string{ "vulGround" }][0], 0, sizeof(grids["vulGround"][0]) * grids["vulGround"].size());
 		memset(&grids[std::string{ "vulAir" }][0], 0, sizeof(grids["vulAir"][0]) * grids["vulAir"].size());
 		memset(&grids[std::string{ "vulTotal" }][0], 0, sizeof(grids["vulTotal"][0]) * grids["vulTotal"].size());*/
-		memset(&InitMap[0], 0, sizeof(InitMap[0]) * InitMap.size());
-		memset(&opinfluenceGround[0], 0, sizeof(opinfluenceGround[0]) * opinfluenceGround.size());
-		memset(&opinfluenceAir[0], 0, sizeof(opinfluenceAir[0]) * opinfluenceAir.size());
-		memset(&influenceGround[0], 0, sizeof(influenceGround[0]) * influenceGround.size());
-		memset(&influenceAir[0], 0, sizeof(influenceAir[0]) * influenceAir.size());
-		memset(&tensionGround[0], 0, sizeof(tensionGround[0]) * tensionGround.size());
-		memset(&tensionAir[0], 0, sizeof(tensionAir[0]) * tensionAir.size());
-		memset(&tensionTotal[0], 0, sizeof(tensionTotal[0]) * tensionTotal.size());
-		memset(&vulGround[0], 0, sizeof(vulGround[0]) * vulGround.size());
-		memset(&vulAir[0], 0, sizeof(vulAir[0]) * vulAir.size());
-		memset(&vulTotal[0], 0, sizeof(vulTotal[0]) * vulTotal.size());
+		
+		for(auto grid: grids)
+		{
+			memset(&grid.second[0], 0, sizeof(grid.second[0]) * grid.second.size());
+		}
 	}
 
 	/*std::unordered_map<BWAPI::Player, std::unordered_map<int, HOLD::UnitDataSet>>* IntelligenceCommand::GetUnitDataSets()
@@ -1845,9 +1529,6 @@ namespace HOLD
 
 	void IntelligenceCommand::AddUnit(Unit u)
 	{
-		//UnitDataSets[Broodwar->self()][u->getType()].m_units.emplace(u);
-		//UnitDataSets[Broodwar->self()][u->getType()].AddUnit(u);
-		//Units[Broodwar->self()][u->getType()] = UnitInfo(u);
 		Units[u->getPlayer()][u->getType()].emplace(new UnitInfo(u));
 	}
 

@@ -238,12 +238,10 @@ UnitType UnitInfo::getType() const
 //--------------------------------------------- GET POSITION -----------------------------------------------
 Position UnitInfo::getPosition() const
 {
-	//todo: should return saved position
-	//return m_unit->getPosition();
-	if(m_unit->exists())
+	if (m_unit->exists())
+		return m_unit->getPosition();
+	else
 		return m_lastPosition;
-
-	return Position{};
 }
 //--------------------------------------------- GET ANGLE --------------------------------------------------
 double UnitInfo::getAngle() const

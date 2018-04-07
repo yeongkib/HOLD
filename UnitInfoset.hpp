@@ -17,6 +17,7 @@ Copyright 2017, Digipen Institute of Technology
 #include <BWAPI/Filters.h>
 #include <BWAPI/SetContainer.h>
 #include <iterator>
+#include <memory>
 
 using namespace BWAPI;
 

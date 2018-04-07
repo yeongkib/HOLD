@@ -47,7 +47,8 @@ namespace HOLD
 		
 		void InitStrategyVs12pool();
 
-		void InitStrategyVsZ(); // 5drone
+		void EmptyStrategy(); // for test
+		void InitStrategyVsZ();
 		void InitStrategyVsP();
 		void InitStrategyVsT();
 
@@ -82,7 +83,7 @@ namespace HOLD
 
 
 		//std::unordered_map< BWAPI::Player, std::unordered_map< int, HOLD::UnitDataSet > >* UnitDataSets;
-		std::unordered_map< BWAPI::Player, std::unordered_map< int, UnitInfoset > >* Units;
+		std::unordered_map<BWAPI::Player, std::unordered_map< int, UnitInfoset>>* Units;
 
 		int currentOrderNum = 1;
 

@@ -172,19 +172,55 @@ namespace HOLD
 		return Grid{ static_cast<short>(std::abs(grid[0])), static_cast<short>(std::abs(grid[1])), static_cast<short>(std::abs(grid[2])), static_cast<short>(std::abs(grid[3])) };
 	};
 
-	inline short GetInfluenceValue(std::vector<Grid> & inf_map, const int& posX, const int& posY)
+	inline double abs(const double& grid)
+	{
+		Grid::uQuarter a(grid);
+		/*int a0, a1, a2, a3;
+		a0 = a.g[0] >> 15;
+		a1 = a.g[1] >> 15;
+		a2 = a.g[2] >> 15;
+		a3 = a.g[3] >> 15;
+		a.g[0] = (a.g[0] ^ a0) - a0;
+		a.g[1] = (a.g[1] ^ a1) - a1;
+		a.g[2] = (a.g[2] ^ a2) - a2;
+		a.g[3] = (a.g[3] ^ a3) - a3;*/
+
+		if (a.g[0] < 0)
+			a.g[0] = a.g[0] - 1, a.g[0] = ~a.g[0];
+		else
+			a.g[0] = a.u_ll & 0x00000000000000FF;
+
+		if (a.g[1] < 0)
+			a.g[1] = a.g[1] - 1, a.g[1] = ~a.g[1];
+		else
+			a.g[1] = a.u_ll >> 16 & 0x00000000000000FF;
+
+		if (a.g[2] < 0)
+			a.g[2] = a.g[2] - 1, a.g[2] = ~a.g[2];
+		else
+			a.g[2] = a.u_ll >> 32 & 0x00000000000000FF;
+
+		if (a.g[3] < 0)
+			a.g[3] = a.g[3] - 1, a.g[3] = ~a.g[3];
+		else
+			a.g[3] = a.u_ll >> 48 & 0x00000000000000FF;
+
+		return a.u_double;
+	}
+
+	inline short GetInfluenceValue(std::array<double, 256*256> & inf_map, const int& posX, const int& posY)
 	{
 		int x = posX % 32;
 		int y = posY % 32;
 
 		if (x < 16 && y < 16)
-			return inf_map[posY / 32 * Broodwar->mapHeight() + posX / 32].GetLeftTop();
+			return Grid::GetLeftTop(inf_map[posY / 32 * Broodwar->mapHeight() + posX / 32]);
 		else if (x > 16 && y < 16)
-			return inf_map[posY / 32 * Broodwar->mapHeight() + posX / 32].GetRightTop();
+			return Grid::GetRightTop(inf_map[posY / 32 * Broodwar->mapHeight() + posX / 32]);
 		else if (x > 16 && y > 16)
-			return inf_map[posY / 32 * Broodwar->mapHeight() + posX / 32].GetRightBot();
+			return Grid::GetRightBot(inf_map[posY / 32 * Broodwar->mapHeight() + posX / 32]);
 		else// if (x < 16 && y > 16)
-			return inf_map[posY / 32 * Broodwar->mapHeight() + posX / 32].GetLeftBot();
+			return Grid::GetLeftBot(inf_map[posY / 32 * Broodwar->mapHeight() + posX / 32]);
 	};
 
 	inline short GetInfluenceValue(std::vector<Grid> & inf_map, Position & pos)

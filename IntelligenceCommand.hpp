@@ -17,148 +17,11 @@ Copyright 2017, Digipen Institute of Technology
 #include <BWAPI/Client/UnitImpl.h>
 #include "UnitInfo.hpp"
 #include "UnitInfoset.hpp"
+#include <memory>
 
 namespace HOLD
 {
-	typedef std::vector<Grid> Vgrid;
-
-
-	class ScoutManager
-	{
-		//Scount
-	};
-
-//	class MyUnitData
-//	{
-//	public:
-//		MyUnitData()
-//		{
-//			m_unit = nullptr;
-//			m_lastPosition = Positions::Invalid;
-//			m_lastSeen = 0;
-//			m_lastPlayer = nullptr;
-//			m_lastType = UnitTypes::Unknown;
-//			m_id = -1;
-//		}
-//		MyUnitData(Unit u)
-//		{
-//			m_unit = u;
-//			m_lastPosition = u->getPosition();
-//			m_lastSeen = Broodwar->getFrameCount();
-//			m_lastPlayer = u->getPlayer();
-//			m_lastType = u->getType();
-//			m_id = u->getID();
-//
-//			//todo: assign current hp and shield
-//		}
-//		~MyUnitData()
-//		{
-//		};
-//
-//		// todo : optimize the order
-//		UnitType m_lastType;
-//		int m_id;
-//
-//		Position m_lastPosition;
-//		frame m_lastSeen;
-//
-//		std::array<short, 240> m_prevHP;
-//		std::array<short, 240> m_prevShield;
-//
-//		int HpSumOver;
-//		int ShieldSumOver;
-//		Unit m_unit;
-//
-//		Player m_lastPlayer;
-//	};
-//
-//
-//	struct UnitDataSet
-//	{
-//		void AddUnit(Unit u)
-//		{
-//			m_units.emplace(u);
-////			m_savedUnits.emplace(u->getID(), MyUnitData(u));
-//
-//			//BWAPI::BroodwarImpl.server.
-//		}
-//
-//		void AddUnit(MyUnitData u)
-//		{
-//			m_units.emplace(u.m_unit);
-//			m_savedUnits.emplace(u.m_unit->getID(), u);
-//		}
-//
-//		void UpdateUnit(Unit u)
-//		{
-//			m_savedUnits[u->getID()] = u;
-//			/*m_savedUnits[u->getID()].m_lastPlayer = u->getPlayer();
-//			m_savedUnits[u->getID()].m_lastPosition = u->getPosition();
-//			m_savedUnits[u->getID()].m_lastSeen = Broodwar->getFrameCount();
-//			m_savedUnits[u->getID()].m_lastType = u->getType();*/
-//		}
-//		/*void UpdateUnit(UnitData & u)
-//		{
-//		m_savedUnits[u->getID()].m_unit = u;
-//		m_savedUnits[u->getID()].m_lastPlayer = u->getPlayer();
-//		m_savedUnits[u->getID()].m_lastPosition = u->getPosition();
-//		m_savedUnits[u->getID()].m_lastSeen = Broodwar->getFrameCount();
-//		m_savedUnits[u->getID()].m_lastType = u->getType();
-//		}*/
-//
-//		void RemoveUnit(Unit u)
-//		{
-//			//m_units.erase_if(m_units.find(u));
-//
-//			//m_units.erase(std::remove_if(m_units.begin(), m_units.end(), [=](Unit & unit){return unit->getID() == u->getID(); }), m_units.end());
-//			
-//			m_units.erase(u);
-//			m_savedUnits.erase(u->getID());
-//			/*for(auto it = m_units.begin(); it != m_units.end(); ++it)
-//			{
-//				if ((*it)->getID() == u->getID())
-//					m_units.erase(it++);
-//				else
-//					++it;
-//			}
-//
-//			for (auto it = m_savedUnits.begin(); it != m_savedUnits.end(); ++it)
-//			{
-//				if ((*it).second.m_id == u->getID())
-//					m_savedUnits.erase(it++);
-//				else
-//					++it;
-//			}
-//			*/
-//
-//			//m_savedUnits.erase(m_savedUnits.find(u->getID()));
-//			/*Unitset::iterator it = m_units.find(u);
-//			if(it._Ptr != nullptr)
-//				m_units.erase(it);
-//
-//			auto it2 = m_savedUnits.find(u->getID());
-//			if(it2._Ptr != nullptr)
-//				m_savedUnits.erase(it2);*/
-//		}
-//		void RemoveUnit(MyUnitData u)
-//		{
-//			Unitset::iterator it = m_units.find(u.m_unit);
-//			if (it._Ptr != nullptr)
-//				m_units.erase(it);
-//
-//			auto it2 = m_savedUnits.find(u.m_unit->getID());
-//			if (it2._Ptr != nullptr)
-//				m_savedUnits.erase(it2);
-//			/*m_units.erase(u.m_unit);
-//			m_savedUnits.erase(u.m_unit->getID());*/
-//		}
-//
-//		std::unordered_map<int, UnitInfo> m_savedUnits;
-//		Unitset m_units;
-//		//todo: add cell info
-//	};
-
-
+	typedef std::array<double, 256*256> Vgrid;
 
 	class Message;
 		
@@ -172,11 +35,7 @@ namespace HOLD
 		void Update(int dt) override;
 		void Shutdown() override;
 		void ProcessMessage(Message* message) override;
-
-
 		void BroadcastMessage(Message* message);
-
-
 		void UpdateLifePoint();
 
 		const int GetMapHeight() const;
@@ -226,14 +85,17 @@ namespace HOLD
 						/* make a copy of it */
 						va_copy(hack, ap);
 
+						
 						/* get the addresses for the variables we wanna hack */
 						for(int iter = 0; iter < n; ++iter )
 						{
-							Grid *cells = va_arg(hack, Grid*);
-							//*temp = 
+							double* grid = va_arg(hack, double*);
+							Grid::uQuarter cell{ *grid };
 							//	//Broodwar->drawTextMap(targetpos_x, targetpos_y, "%d", static_cast<int>( static_cast<float>(damage) / dist));
-							short &cell = (*cells)[i];
-							cell = op(cell, static_cast<short>(damage));
+							//short cell = (*cells).g[i];
+							cell.g[i] = op(cell.g[i], static_cast<short>(damage));
+							double & cell1 = *grid;
+							cell1 = cell.u_double;
 						}
 						va_end(hack);
 					}
@@ -250,14 +112,19 @@ namespace HOLD
 						/* make a copy of it */
 						va_copy(hack, ap);
 
+						
 						/* get the addresses for the variables we wanna hack */
 						for (int iter = 0; iter < n; ++iter)
 						{
-							Grid *cells = va_arg(hack, Grid*);
+							double* grid = va_arg(hack, double*);
+							Grid::uQuarter cell{ *grid };
+							//Grid *cells = va_arg(hack, Grid*);
 							//*temp = 
 							//	//Broodwar->drawTextMap(targetpos_x, targetpos_y, "%d", static_cast<int>( static_cast<float>(damage) / dist));
-							short &cell = (*cells)[i];
-							cell = op(cell, static_cast<short>(static_cast<float>(damage) / dist));
+							//short &cell = (*cells).g[i];
+							cell.g[i] = op(cell.g[i], static_cast<short>(static_cast<float>(damage) / dist));
+							double & cell1 = *grid;
+							cell1 = cell.u_double;
 						}
 						va_end(hack);
 					}
@@ -274,13 +141,10 @@ namespace HOLD
 		void ClearInfluenceMaps();
 
 		//std::unordered_map< BWAPI::Player, std::unordered_map< int, HOLD::UnitDataSet > >* GetUnitDataSets();
-		std::unordered_map< BWAPI::Player, std::unordered_map< int, UnitInfoset > >* GetUnitDataSets();
-
-
+		std::unordered_map<BWAPI::Player, std::unordered_map<int, UnitInfoset>>* GetUnitDataSets();
 
 		void AddUnit(Unit u);
 		void RemoveUnit(Unit u);
-
 
 		void OnUnitMorph(Unit unit) override;
 		void OnUnitCreate(Unit unit) override;
@@ -291,9 +155,6 @@ namespace HOLD
 
 		int m_idStack;
 		int GenerateID();
-
-
-		
 
 
 		// create array
@@ -310,34 +171,18 @@ namespace HOLD
 		Calculated as Tension map -Abs(Influence map)
 		*/
 	public:
-		Vgrid InitMap;
-		Vgrid opinfluenceGround;
-		Vgrid opinfluenceAir;
-		Vgrid influenceGround;
-		Vgrid influenceAir;
-		Vgrid tensionGround;
-		Vgrid tensionAir;
-		Vgrid tensionTotal;
-		Vgrid vulGround;
-		Vgrid vulAir;
-		Vgrid vulTotal;
-		//std::unordered_map<std::string, Vgrid> grids;
+		std::unordered_map<std::string, std::array<double, 256*256>> grids;
+
 		int mapWidth;
 		int mapHeight;
 
 		std::vector<TilePosition> startingLocations;
 
-		//bool foundEnemyBase = false;
 		bool firstattack_hydra = false;
 		bool firstattack_mutal = false;
 		std::vector<TilePosition> enemyBaseCandidate;
 		std::vector<TilePosition> enemyBase;
-		//std::unordered_map< BWAPI::Player, std::unordered_map< int, HOLD::UnitDataSet > > UnitDataSets;
-
-		std::unordered_map< BWAPI::Player, std::unordered_map< int, UnitInfoset > > Units;
-		//std::unordered_map< BWAPI::Player, std::unordered_multimap< UnitType, UnitInfo > > Units;
-
-
+		std::unordered_map<BWAPI::Player, std::unordered_map<int, UnitInfoset>> Units;
 
 		bool runflag;
 

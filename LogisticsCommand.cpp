@@ -42,6 +42,7 @@ namespace HOLD
 		//todo : get enemy's race if possible
 		if (Broodwar->enemy())
 		{
+			EmptyStrategy(); return;
 			if (Broodwar->enemy()->getRace() == Races::Zerg)
 				InitStrategyVsZ();
 
@@ -106,6 +107,7 @@ namespace HOLD
 	{
 	}
 
+
 	void LogisticsCommand::InitStrategyVs12pool()
 	{
 		strat = pool12;
@@ -142,6 +144,11 @@ namespace HOLD
 		AddOrder(UnitTypes::Zerg_Hydralisk, 3);
 		AddOrder(UnitTypes::Zerg_Overlord, 3);
 		AddOrder(UnitTypes::Zerg_Hydralisk, 3);
+	}
+
+	void LogisticsCommand::EmptyStrategy()
+	{
+		AddOrder(UnitTypes::Zerg_Drone, 1);
 	}
 
 	void LogisticsCommand::InitStrategyVsZ()
@@ -218,7 +225,7 @@ namespace HOLD
 					{
 						//if ((*MyUnitSets[BWAPI::UnitTypes::Enum::Zerg_Larva].m_units.begin())->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType())))
 						if (!(*Units)[Broodwar->self()][UnitTypes::Enum::Zerg_Larva].empty())
-							if ((*(*Units)[Broodwar->self()][UnitTypes::Enum::Zerg_Larva].begin())->m_unit->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType())))
+							if ((*begin((*Units)[Broodwar->self()][UnitTypes::Enum::Zerg_Larva]))->m_unit->issueCommand(BWAPI::UnitCommand::morph(nullptr, mt.getUnitType())))
 							{
 								/*reservedMineral -= requireMin;
 								reservedGas -= requireGas;
@@ -261,7 +268,7 @@ namespace HOLD
 
 						//for (auto & worker : MyUnitSets[BWAPI::UnitTypes::Zerg_Drone].m_units)
 						//BWAPI::Unit supplyBuilder = *MyUnitSets[BWAPI::UnitTypes::Zerg_Drone].m_units.begin();
-						UnitInfo* supplyBuilder = *(*Units)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].begin();
+						auto supplyBuilder = *begin((*Units)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone]);
 						{
 							// Retrieve a unit that is capable of constructing the supply needed
 							/*BWAPI::Unit supplyBuilder = (worker)->getClosestUnit(BWAPI::Filter::GetType == mt.unitType.whatBuilds().first &&
@@ -433,7 +440,7 @@ namespace HOLD
 					if (mt.getUnitType() == BWAPI::UnitTypes::Enum::Zerg_Lair)
 					{
 						bool result = false;
-						for (UnitInfo* hatchery : (*Units)[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Hatchery])
+						for (auto hatchery : (*Units)[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Hatchery])
 							//auto & hatchery = *MyUnitSets[BWAPI::UnitTypes::Enum::Zerg_Hatchery].m_units.begin();
 						{
 							//if (hatchery->getClientInfo<bool>('1st'))
@@ -455,7 +462,7 @@ namespace HOLD
 					}
 					else if (mt.getUnitType() == BWAPI::UnitTypes::Enum::Zerg_Hive)
 					{
-						for (UnitInfo* lair : (*Units)[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Lair])
+						for (auto lair : (*Units)[Broodwar->self()][BWAPI::UnitTypes::Enum::Zerg_Lair])
 							//auto & lair = *MyUnitSets[BWAPI::UnitTypes::Enum::Zerg_Lair].m_units.begin();
 						{
 							if (lair->m_unit->getTilePosition() == Broodwar->self()->getStartLocation())
@@ -479,7 +486,7 @@ namespace HOLD
 						if ((*Units)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].empty())
 							return false;
 
-						UnitInfo* supplyBuilder = *(*Units)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone].begin();
+						auto supplyBuilder = *begin((*Units)[Broodwar->self()][BWAPI::UnitTypes::Zerg_Drone]);
 						{
 							// Retrieve a unit that is capable of constructing the supply needed
 							/*BWAPI::Unit supplyBuilder = (worker)->getClosestUnit(BWAPI::Filter::GetType == mt.unitType.whatBuilds().first &&
@@ -600,9 +607,9 @@ namespace HOLD
 			if (minerals >= requireMin
 				&& gas >= requireGas)
 			{
-				if (*(*Units)[Broodwar->self()][mt.getTechType().whatResearches()].begin() != nullptr)
+				if (*begin((*Units)[Broodwar->self()][mt.getTechType().whatResearches()]) != nullptr)
 				{
-					if ((*(*Units)[Broodwar->self()][mt.getTechType().whatResearches()].begin())->m_unit->research(mt.getTechType()))
+					if ((*begin((*Units)[Broodwar->self()][mt.getTechType().whatResearches()]))->m_unit->research(mt.getTechType()))
 					{
 						reservedMineral -= requireMin;
 						reservedGas -= requireGas;
