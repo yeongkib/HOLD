@@ -11,17 +11,13 @@ Copyright 2017, Digipen Institute of Technology
 /*****************************************************************************/
 #pragma once
 #include "HeadQuarters.hpp"
-
 #include <BWAPI.h>
 #include <memory>
 #include "../BWEM_1_3/gridMap.h"
-
 #include "IntelligenceCommand.hpp"
-
 #include "LogisticsCommand.hpp"
 
 // Remember not to use "Broodwar" in any global class constructor!
-
 class HoldAIModule : public BWAPI::AIModule
 {
 public:
@@ -47,9 +43,7 @@ public:
 
   HOLD::HeadQuarters* HQ;
 
-
   int last_time;
   int current_time;
-
   int runflag;
 };

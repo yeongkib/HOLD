@@ -21,11 +21,8 @@ Copyright 2017, Digipen Institute of Technology
 #include <cstdlib>
 #include <cfloat>
 
-namespace HOLD
-{
-	namespace Math
-	{
-
+namespace HOLD {
+	namespace Math 	{
 		namespace
 		{
 			const float cTemp = -0.0f;
@@ -39,18 +36,15 @@ namespace HOLD
 
 		const float& cInfinite = gInfinite;
 
-		float DebugEpsilon()
-		{
+		float DebugEpsilon() {
 			return 0.00000001f;
 		}
 
-		float PositiveMax()
-		{
+		float PositiveMax() {
 			return FLT_MAX;
 		}
 
-		float PositiveMin()
-		{
+		float PositiveMin() {
 			return FLT_MIN;
 		}
 
@@ -64,138 +58,112 @@ namespace HOLD
 		//  return !Equal(lhs, rhs);
 		//}
 
-		bool DebugIsZero(float val)
-		{
+		bool DebugIsZero(float val) {
 			return Abs(val) <= DebugEpsilon();
 		}
 
-		bool IsNegative(float number)
-		{
+		bool IsNegative(float number) {
 			return GetSign(number) == cNegative;
 		}
 
-		bool IsPositive(float number)
-		{
+		bool IsPositive(float number) {
 			return GetSign(number) == cPositive;
 		}
 
-		bool LessThan(float lhs, float rhs)
-		{
+		bool LessThan(float lhs, float rhs) {
 			return lhs < rhs;
 		}
 
-		bool LessThanOrEqual(float lhs, float rhs)
-		{
+		bool LessThanOrEqual(float lhs, float rhs) {
 			return lhs <= rhs;
 		}
 
-		bool GreaterThan(float lhs, float rhs)
-		{
+		bool GreaterThan(float lhs, float rhs) {
 			return lhs > rhs;
 		}
 
-		bool GreaterThanOrEqual(float lhs, float rhs)
-		{
+		bool GreaterThanOrEqual(float lhs, float rhs) {
 			return lhs >= rhs;
 		}
 
-		float Sqrt(float val)
-		{
+		float Sqrt(float val) {
 			return std::sqrt(val);
 		}
 
-		float Rsqrt(float val)
-		{
+		float Rsqrt(float val) {
 			return 1.0f / std::sqrt(val);
 		}
 
-		float Sq(float sqrt)
-		{
+		float Sq(float sqrt) {
 			return sqrt * sqrt;
 		}
 
-		float Pow(float base, float exp)
-		{
+		float Pow(float base, float exp) {
 			return std::pow(base, exp);
 		}
 
-		float Log(float val)
-		{
+		float Log(float val) {
 			return std::log(val);
 		}
 
-		float Abs(float val)
-		{
+		float Abs(float val) {
 			return std::abs(val);
 		}
 
-		int Abs(int val)
-		{
+		int Abs(int val) {
 			return std::abs(val);
 		}
 
-		float FMod(float dividend, float divisor)
-		{
+		float FMod(float dividend, float divisor) {
 			return fmod(dividend, divisor);
 		}
 
-		float GetSign(float val)
-		{
+		float GetSign(float val) {
 			return (*reinterpret_cast<unsigned*>(&val) & cSignBit) != 0 ? cNegative
 				: cPositive;
 			//return lhs >= 0.0f ? 1.0f : -1.0f;
 		}
 
-		float Cos(float val)
-		{
+		float Cos(float val) {
 			return std::cos(val);
 		}
 
-		float Sin(float val)
-		{
+		float Sin(float val) {
 			return std::sin(val);
 		}
 
-		float Tan(float angle)
-		{
+		float Tan(float angle) {
 			return std::tan(angle);
 		}
 
-		float ArcCos(float angle)
-		{
+		float ArcCos(float angle) {
 			angle = Math::ClampIfClose(angle, -1.0f, 1.0f, 0.00001f);
 			return std::acos(angle);
 		}
 
-		float ArcSin(float angle)
-		{
+		float ArcSin(float angle) {
 			angle = Math::ClampIfClose(angle, -1.0f, 1.0f, 0.00001f);
 			return std::asin(angle);
 		}
 
-		float ArcTan(float angle)
-		{
+		float ArcTan(float angle) {
 			angle = Math::ClampIfClose(angle, -1.0f, 1.0f, 0.00001f);
 			return std::atan(angle);
 		}
 
-		float ArcTan2(float y, float x)
-		{
+		float ArcTan2(float y, float x) {
 			return std::atan2(y, x);
 		}
 
-		float RadToDeg(float radians)
-		{
+		float RadToDeg(float radians) {
 			return (180.0f / cPi) * radians;
 		}
 
-		float DegToRad(float degrees)
-		{
+		float DegToRad(float degrees) {
 			return (cPi / 180.0f) * degrees;
 		}
 
-		bool IsValid(float val)
-		{
+		bool IsValid(float val) {
 #ifdef _MSC_VER
 			return _finite(val) != 0;
 #else
@@ -203,18 +171,15 @@ namespace HOLD
 #endif
 		}
 
-		float Round(float val)
-		{
+		float Round(float val) {
 			return std::floor(val + 0.5f);
 		}
 
-		float Ceil(float val)
-		{
+		float Ceil(float val) {
 			return std::ceil(val);
 		}
 
-		float Floor(float val)
-		{
+		float Floor(float val) {
 			return std::floor(val);
 		}
 

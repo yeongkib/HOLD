@@ -25,13 +25,8 @@ Copyright 2017, Digipen Institute of Technology
 #include <math.h>
 #include <numeric>
 #include <array>
-
 #include <stdarg.h>
-
-//#include <BWAPI.h>
 #include <BWAPI/Game.h>
-
-
 #include "Reals.hpp"
 #include "Utilities.hpp"
 #include "Vector2.hpp"
@@ -39,7 +34,6 @@ Copyright 2017, Digipen Institute of Technology
 #include "Message.hpp"
 
 typedef int frame;
-
 
 template< typename ContainerT, typename PredicateT >
 void erase_if(ContainerT& items, const PredicateT& predicate) {

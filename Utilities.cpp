@@ -9,7 +9,6 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
-
 #include "Precompiled.hpp"
 
 // Includes
@@ -20,8 +19,7 @@ Copyright 2017, Digipen Institute of Technology
 
 namespace HOLD
 {
-	void PrintError(const char* format, ...)
-	{
+	void PrintError(const char* format, ...) {
 		va_list vl;
 		va_start(vl, format);
 
@@ -36,8 +34,7 @@ namespace HOLD
 
 		// Only popup the console upon the first error
 		static bool firstError = true;
-		if (firstError == true)
-		{
+		if (firstError == true) {
 			// Bring the console window to the front
 			HWND hwnd = GetConsoleWindow();
 			SetForegroundWindow(hwnd);

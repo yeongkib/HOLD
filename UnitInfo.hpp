@@ -60,12 +60,10 @@ public:
 	operator BWAPI::Unit() const;
 
 	// GetInfo
-	/*unsigned short GetAverageHP(unsigned int term = 128, int currentframe = Broodwar->getFrameCount()) const;
-	unsigned short GetAverageShield(unsigned int term = 128, int currentframe = Broodwar->getFrameCount()) const;*/
 	float GetAverageHP(unsigned int term = 128, int currentframe = Broodwar->getFrameCount()) const;
 	float GetAverageShield(unsigned int term = 128, int currentframe = Broodwar->getFrameCount()) const;
 
-	// assume it will be used after at least 128 frames
+	// Assume it will be used after at least 128 frames
 	int GetHPVariance(unsigned int term = 128, int currentframe = Broodwar->getFrameCount()) const;
 	int GetShieldVariance(unsigned int term = 128, int currentframe = Broodwar->getFrameCount()) const;
 	int GetOrderTimer() const;
@@ -127,9 +125,6 @@ public:
 	void RunGuard();
 	void RunGuardPost();
 	void RunComputerReturn();
-
-
-
 
 	// for Unit
 public:
@@ -377,14 +372,11 @@ public:
 	Unit m_unit;
 
 //private:
-	
 	UnitType m_lastType;
 	int m_id;
 
 	Position m_lastPosition;
 	frame m_lastSeen;
-
-	
 
 	mutable unsigned short m_avgHp;
 	mutable unsigned short m_avgShield;

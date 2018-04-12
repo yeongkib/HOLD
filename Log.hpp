@@ -14,7 +14,6 @@ Copyright 2017, Digipen Institute of Technology
 #include <chrono>
 #include <fstream>
 
-
 #ifndef NDEBUG
 extern std::chrono::time_point<std::chrono::system_clock> performancetimer_start, performancetimer_end;
 

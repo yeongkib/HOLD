@@ -9,16 +9,12 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
-
 #include "Precompiled.hpp"
-
 #include "IntelligenceCommand.hpp"
 #include "LogisticsCommand.hpp"
 #include <BWAPI/UnitCommandType.h>
 #include <BWAPI/UnitCommand.h>
-
 #include "../BWEM_1_3/bwem.h"
-
 
 namespace { auto & theMap = BWEM::Map::Instance(); }
 using namespace Filter;
@@ -29,7 +25,6 @@ namespace HOLD
 	{
 	}
 
-
 	LogisticsCommand::~LogisticsCommand()
 	{
 	}
@@ -37,7 +32,6 @@ namespace HOLD
 	void LogisticsCommand::Init()
 	{
 		Units = HeadQuarters::GetInstance()->GetCommand<IntelligenceCommand>()->GetUnitDataSets();
-
 
 		//todo : get enemy's race if possible
 		if (Broodwar->enemy())
@@ -60,31 +54,29 @@ namespace HOLD
 		}
 	}
 
-
 	void LogisticsCommand::Update(int dt)
 	{
-
 		GetNextOrder();
 
 		switch (buildorder.front().getType())
 		{
 		case UnitCommandTypes::Build:
 		case UnitCommandTypes::Morph:
-		Broodwar->drawTextScreen(5, 0, "current: %d - %s", currentOrderNum, buildorder.front().getUnitType().c_str());
-		Broodwar->drawTextScreen(5, 10, "Mineral : %d ", buildorder.front().getUnitType().mineralPrice());
-		Broodwar->drawTextScreen(5, 20, "Gas : %d ", buildorder.front().getUnitType().gasPrice());
-		Broodwar->drawTextScreen(5, 30, "Supply : %d ", buildorder.front().getUnitType().supplyRequired());
-		break;
+			Broodwar->drawTextScreen(5, 0, "current: %d - %s", currentOrderNum, buildorder.front().getUnitType().c_str());
+			Broodwar->drawTextScreen(5, 10, "Mineral : %d ", buildorder.front().getUnitType().mineralPrice());
+			Broodwar->drawTextScreen(5, 20, "Gas : %d ", buildorder.front().getUnitType().gasPrice());
+			Broodwar->drawTextScreen(5, 30, "Supply : %d ", buildorder.front().getUnitType().supplyRequired());
+			break;
 		case UnitCommandTypes::Upgrade:
-		Broodwar->drawTextScreen(5, 0, "current: %d - %s", currentOrderNum, buildorder.front().getUpgradeType().c_str());
-		Broodwar->drawTextScreen(5, 10, "Mineral : %d ", buildorder.front().getUpgradeType().mineralPrice());
-		Broodwar->drawTextScreen(5, 20, "Gas : %d ", buildorder.front().getUpgradeType().gasPrice());
-		break;
+			Broodwar->drawTextScreen(5, 0, "current: %d - %s", currentOrderNum, buildorder.front().getUpgradeType().c_str());
+			Broodwar->drawTextScreen(5, 10, "Mineral : %d ", buildorder.front().getUpgradeType().mineralPrice());
+			Broodwar->drawTextScreen(5, 20, "Gas : %d ", buildorder.front().getUpgradeType().gasPrice());
+			break;
 		case UnitCommandTypes::Research:
-		Broodwar->drawTextScreen(5, 0, "current: %d - %s", currentOrderNum, buildorder.front().getTechType().c_str());
-		Broodwar->drawTextScreen(5, 10, "Mineral : %d ", buildorder.front().getTechType().mineralPrice());
-		Broodwar->drawTextScreen(5, 20, "Gas : %d ", buildorder.front().getTechType().gasPrice());
-		break;
+			Broodwar->drawTextScreen(5, 0, "current: %d - %s", currentOrderNum, buildorder.front().getTechType().c_str());
+			Broodwar->drawTextScreen(5, 10, "Mineral : %d ", buildorder.front().getTechType().mineralPrice());
+			Broodwar->drawTextScreen(5, 20, "Gas : %d ", buildorder.front().getTechType().gasPrice());
+			break;
 		}
 
 		Broodwar->drawTextScreen(150, 10, "reservedMineal : %d ", reservedMineral);
@@ -96,17 +88,15 @@ namespace HOLD
 
 	void LogisticsCommand::Shutdown()
 	{
-
 	}
+
 	void LogisticsCommand::ProcessMessage(Message* message)
 	{
-
 	}
 
 	void LogisticsCommand::BroadcastMessage(Message* message)
 	{
 	}
-
 
 	void LogisticsCommand::InitStrategyVs12pool()
 	{

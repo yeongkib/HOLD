@@ -18,10 +18,9 @@ Copyright 2017, Digipen Institute of Technology
 
 namespace HOLD
 {
-	//forward
+	//forward declaration 
 	class Message;
 	struct UnitDataSet;
-
 
 	enum Strategy
 	{
@@ -41,9 +40,7 @@ namespace HOLD
 		void Shutdown() override;
 		void ProcessMessage(Message* message) override;
 
-
 		void BroadcastMessage(Message* message);
-		
 		
 		void InitStrategyVs12pool();
 
@@ -58,7 +55,6 @@ namespace HOLD
 		void AddOrder(const UpgradeType& ut, const int& count = 1, const int& priority = 0);
 		void AddOrder(const TechType& tt, const int& count = 1, const int& priority = 0);
 
-
 		void ReserveResource(const UnitCommandType& uct = UnitCommandTypes::Unknown);
 		void SpendResource(const UnitCommandType& uct = UnitCommandTypes::Unknown);
 
@@ -71,24 +67,20 @@ namespace HOLD
 		void OnUnitShow(Unit unit) override;
 		void OnUnitDestroy(Unit unit) override;
 
-
 		Strategy strat;
 
 	private:
-
 		std::deque<UnitCommand> buildorder;
 
 		int m_idStack;
 		int GenerateID();
 
-
-		//std::unordered_map< BWAPI::Player, std::unordered_map< int, HOLD::UnitDataSet > >* UnitDataSets;
 		std::unordered_map<BWAPI::Player, std::unordered_map< int, UnitInfoset>>* Units;
 
 		int currentOrderNum = 1;
 
 		int reservedMineral = 0;
-		int reservedGas = 0;
-		int reservedSupply = 0;
+		int reservedGas     = 0;
+		int reservedSupply  = 0;
 	};
 }

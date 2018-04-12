@@ -39,7 +39,7 @@ namespace HOLD
 		template<typename T>
 		void AttachCommander(T* system)
 		{
-			//todo : assert if it already exist
+			//todo : assert if it's already existed
 			m_CommandList[typeid(T).hash_code()] = system;
 		}
 		template<typename T>
@@ -65,4 +65,4 @@ namespace HOLD
 		static HeadQuarters* m_Instance;
 		HeadQuarters();
 	};
-}
+} //namespace HOLD

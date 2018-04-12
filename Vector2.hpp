@@ -17,7 +17,6 @@ namespace HOLD
 {
 	namespace Math
 	{
-
 		struct Vector2;
 		typedef const Vector2& Vec2Param;
 		typedef Vector2& Vec2Ref;

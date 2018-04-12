@@ -16,7 +16,6 @@ Copyright 2017, Digipen Institute of Technology
 
 namespace HOLD
 {
-
 	using Math::Vector2;
 
 	class Box
