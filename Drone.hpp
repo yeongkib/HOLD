@@ -9,16 +9,19 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 #include "BehaviorTree.hpp"
 
 namespace HOLD
 {
-	struct zerg_drone {
+	struct zerg_drone 
+	{
 		int id;
 	};
 
-	class Unitset_drone {
+	class Unitset_drone
+	{
 	private:
 		std::stack<zerg_drone*> drones;
 	public:
@@ -27,7 +30,7 @@ namespace HOLD
 	private:
 		void initializeBuilding(int nodrones)
 		{
-			for (int i = 0; i < nodrones; i++)
+			for (auto i = 0; i < nodrones; ++i)
 				drones.push(new zerg_drone{ nodrones - i });
 		}
 	};
@@ -49,7 +52,8 @@ namespace HOLD
 	private:
 		virtual bool run() override
 		{
-			if (std::rand() % 100 < probabilityOfSuccess) {
+			if (std::rand() % 100 < probabilityOfSuccess)
+			{
 				std::cout << name << " succeeded." << std::endl;
 				return true;
 			}

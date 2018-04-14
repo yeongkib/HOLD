@@ -20,64 +20,77 @@ namespace HOLD
 	{
 	};
 
-	Grid::Grid(int sameValue) {
+	Grid::Grid(const int& sameValue)
+	{
 		quarter.g[0] =
 		quarter.g[1] =
 		quarter.g[2] =
 		quarter.g[3] = static_cast<short>(sameValue);
 	}
 
-	Grid::Grid(short sameValue) {
+	Grid::Grid(const short& sameValue)
+	{
 		quarter.g[0] =
 		quarter.g[1] =
 		quarter.g[2] =
 		quarter.g[3] = sameValue;
 	}
 
-	Grid::Grid(short LeftTop, short RightTop, short LeftBot, short RightBot) {
+	Grid::Grid(short LeftTop, short RightTop, short LeftBot, short RightBot)
+	{
 		quarter.g[0] = LeftTop;
 		quarter.g[1] = RightTop;
 		quarter.g[2] = LeftBot;
 		quarter.g[3] = RightBot;
 	}
 
-	Grid::Grid(double grid) {
+	Grid::Grid(double grid) 
+	{
 		quarter.u_double = grid;
 	}
 
-	void Grid::SetLeftTop(short value) {
+	void Grid::SetLeftTop(const short& value) 
+	{
 		quarter.g[0] = value;
 	}
 
-	void Grid::SetRightTop(short value) {
+	void Grid::SetRightTop(const short& value)
+	{
 		quarter.g[1] = value;
 	}
 
-	void Grid::SetLeftBot(short value) {
+	void Grid::SetLeftBot(const short& value) 
+	{
 		quarter.g[2] = value;
 	}
 
-	void Grid::SetRightBot(short value) {
+	void Grid::SetRightBot(const short& value)
+	{
 		quarter.g[3] = value;
 	}
 
-	short Grid::GetLeftTop() const {
+	short Grid::GetLeftTop() const 
+	{
 		return quarter.g[0];
 	}
 
-	short Grid::GetRightTop() const {
+	short Grid::GetRightTop() const
+	{
 		return quarter.g[1];
 	}
 
-	short Grid::GetLeftBot() const {
+	short Grid::GetLeftBot() const
+	{
 		return quarter.g[2];
 	}
 
-	short Grid::GetRightBot() const	{
+	short Grid::GetRightBot() const
+	{
 		return quarter.g[3];
 	}
 
-	int Grid::GetTotal() {
+	int Grid::GetTotal()
+	{
 		return static_cast<int>(quarter.g[0])
 		     + static_cast<int>(quarter.g[1])
 		     + static_cast<int>(quarter.g[2])
@@ -85,95 +98,99 @@ namespace HOLD
 		
 	}
 
-	bool Grid::IsAllSame() {
+	bool Grid::IsAllSame()
+	{
 		return quarter.g[0] == quarter.g[1]
 			&& quarter.g[0] == quarter.g[2]
 			&& quarter.g[0] == quarter.g[3];
 	}
 
-	bool Grid::IsAllSame(double& grid)	{
+	bool Grid::IsAllSame(const double& grid)
+	{
 		Grid temp{ grid };
 		return temp.IsAllSame();
 	}
 
-	short Grid::GetLeftTop(double& grid) {
+	short Grid::GetLeftTop(const double& grid) 
+	{
 		Grid temp{ grid };
 		return temp.GetLeftTop();
 	}
 
-	short Grid::GetRightTop(double& grid) {
+	short Grid::GetRightTop(const double& grid) 
+	{
 		Grid temp{ grid };
 		return temp.GetRightTop();
 	}
 
-	short Grid::GetLeftBot(double& grid) {
+	short Grid::GetLeftBot(const double& grid) 
+	{
 		Grid temp{ grid };
 		return temp.GetLeftBot();
 	}
 
-	short Grid::GetRightBot(double& grid) {
+	short Grid::GetRightBot(const double& grid)
+	{
 		Grid temp{ grid };
 		return temp.GetRightBot();
 	}
 
-	Grid Grid::operator+(const int & value) const {
+	Grid Grid::operator+(const int & value) const
+	{
 		int temp = value;
 		return *this + Grid{
 			static_cast<short>(temp),
 			static_cast<short>(temp),
 			static_cast<short>(temp),
-			static_cast<short>(temp)
-		};
+			static_cast<short>(temp) };
 	}
 
-	Grid Grid::operator+(const Grid & rhs) const {
+	Grid Grid::operator+(const Grid & rhs) const
+	{
 		return Grid{
 			this->GetLeftTop()  + rhs.GetLeftTop(),
 			this->GetRightTop() + rhs.GetRightTop(),
 			this->GetLeftBot()  + rhs.GetLeftBot(),
-			this->GetRightBot() + rhs.GetRightBot()
-		};
+			this->GetRightBot() + rhs.GetRightBot() };
 	}
 
-	Grid Grid::operator-(const int & value) const {
+	Grid Grid::operator-(const int & value) const
+	{
 		int temp = value;
 		return *this - Grid{
 			static_cast<short>(temp),
 			static_cast<short>(temp),
 			static_cast<short>(temp),
-			static_cast<short>(temp)
-		};
+			static_cast<short>(temp) };
 	}
 
-	Grid Grid::operator-(const Grid & rhs) const {
+	Grid Grid::operator-(const Grid & rhs) const
+	{
 		return Grid{
 			this->GetLeftTop()  - rhs.GetLeftTop(),
 			this->GetRightTop() - rhs.GetRightTop(),
 			this->GetLeftBot()  - rhs.GetLeftBot(),
-			this->GetRightBot() - rhs.GetRightBot()
-		};
+			this->GetRightBot() - rhs.GetRightBot() };
 	}
 
-	bool Grid::operator!=(short value) {
+	bool Grid::operator!=(const short& value)
+	{
 		return quarter.g[0] != value
 			|| quarter.g[1] != value
 			|| quarter.g[2] != value
 			|| quarter.g[3] != value;
 	}
 
-	bool Grid::operator==(short value) {
+	bool Grid::operator==(const short& value)
+	{
 		return quarter.g[0] == value
 			&& quarter.g[1] == value
 			&& quarter.g[2] == value
 			&& quarter.g[3] == value;
 	}
-
-	Grid& Grid::operator=(const Grid& rhs) {
-		quarter = rhs.quarter;
-		return *this;
-	}
-
-	Grid& Grid::operator=(const int & value) {
+	
+	Grid& Grid::operator=(const int & value)
+	{
 		quarter.g[0] =
 		quarter.g[1] =
 		quarter.g[2] =
@@ -181,12 +198,14 @@ namespace HOLD
 		return *this;
 	}
 
-	short& Grid::operator[] (const int index) {
+	short& Grid::operator[] (const int& index)
+	{
 		//todo : assert
 		return quarter.g[index];
 	}
 
-	const short& Grid::operator[] (const int index) const {
+	const short& Grid::operator[] (const int& index) const
+	{
 		return quarter.g[index];
 	}
 }//namespace HOLD

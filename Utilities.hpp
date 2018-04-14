@@ -9,17 +9,19 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 
 // Includes
 #include "Grid.hpp"
 #include "Vector2.hpp"
 #include "Reals.hpp"
-#include <stdio.h>
+#include <cstdio>
 #include <BWAPI/Unitset.h>
 #include <BWAPI/Unit.h>
 #include <BWAPI/Game.h>
 #include <BWAPI/Player.h>
+#include <array>
 
 using namespace BWAPI;
 using namespace HOLD::Math;
@@ -28,25 +30,26 @@ namespace HOLD
 {
 	#define PI 3.14159265358979323846
 
-	const auto RegisterEvent = [](const auto &action, auto condition = nullptr, int timesToRun = -1, int framesToCheck = 0)
+	const auto RegisterEvent = [](const auto &action, auto condition, int timesToRun = -1, int framesToCheck = 0)
 	{
 		Broodwar->registerEvent(action, condition, 1, 1); // do
 		Broodwar->registerEvent(action, condition, timesToRun, framesToCheck); // while
 	};
 
-	const inline float AngleBetween(const TilePosition &v1, const TilePosition &v2)
+	inline float AngleBetween(const TilePosition &v1, const TilePosition &v2)
 	{
-		float dot = v1.x * v2.x + v1.y * v2.y; // dot product between[x1, y1] and [x2, y2]
-		float det = v1.x * v2.y - v1.y * v2.x; // determinant
+		const float dot = v1.x * v2.x + v1.y * v2.y; // dot product between[x1, y1] and [x2, y2]
+		const float det = v1.x * v2.y - v1.y * v2.x; // determinant
 		return atan2(det, dot);                // atan2(y, x) or atan2(sin, cos)
 	}
 
 	const auto DrawDirection = [](Unit & u, const double& distance)
 	{
 		if (u->getType().isBuilding()
-			|| u->getType() == UnitTypes::Enum::Zerg_Larva
-			|| u->getType() == UnitTypes::Enum::Zerg_Egg)
+		 || u->getType() == UnitTypes::Enum::Zerg_Larva
+		 || u->getType() == UnitTypes::Enum::Zerg_Egg)
 			return;
+
 		double x1 = static_cast<double>(u->getPosition().x);
 		double y1 = static_cast<double>(u->getPosition().y);
 
@@ -88,15 +91,18 @@ namespace HOLD
 			|| groundWeapon == WeaponTypes::Unknown)
 		{
 		}
-		else {
+		else
+		{
 			// Retrieve the min and max weapon ranges
 			int minRange = groundWeapon.minRange();
 			int maxRange = u->getPlayer()->weaponMaxRange(groundWeapon); // it need to check range upgrade
 
-			if (minRange == maxRange) {
+			if (minRange == maxRange)
+			{
 				Broodwar->drawCircleMap(u->getPosition(), maxRange + 1, Colors::White);
 			}
-			else {
+			else
+			{
 				if (minRange)
 					Broodwar->drawCircleMap(u->getPosition(), minRange + 1, Colors::White);
 				Broodwar->drawCircleMap(u->getPosition(), maxRange + 1, Colors::White);
@@ -116,10 +122,12 @@ namespace HOLD
 			int minRange = airWeapon.minRange();
 			int maxRange = u->getPlayer()->weaponMaxRange(airWeapon); //check range upgrade status
 
-			if (minRange == maxRange) {
+			if (minRange == maxRange)
+			{
 				Broodwar->drawCircleMap(u->getPosition(), minRange, Colors::Cyan);
 			}
-			else {
+			else
+			{
 				if (minRange)
 					Broodwar->drawCircleMap(u->getPosition(), minRange, Colors::Blue);
 				Broodwar->drawCircleMap(u->getPosition(), maxRange, Colors::Cyan);
@@ -129,8 +137,6 @@ namespace HOLD
 				Colors::Grey);
 		}
 	}
-
-
 
 	inline void DrawBoundary(UnitType ut, Position pos, Color color = Colors::Red)
 	{
@@ -146,9 +152,14 @@ namespace HOLD
 		Broodwar->drawBoxMap(u->getLeft(), u->getTop(), u->getRight(), u->getBottom(), color);
 	}
 
-	inline Grid Abs(const Grid & grid)
+	inline Grid Abs(const Grid& grid)
 	{
-		return Grid{ static_cast<short>(std::abs(grid[0])), static_cast<short>(std::abs(grid[1])), static_cast<short>(std::abs(grid[2])), static_cast<short>(std::abs(grid[3])) };
+		return Grid{ 
+			static_cast<short>(std::abs(grid[0])),
+			static_cast<short>(std::abs(grid[1])),
+			static_cast<short>(std::abs(grid[2])),
+			static_cast<short>(std::abs(grid[3]))
+		};
 	};
 
 	inline double Abs(const double& grid)
@@ -187,7 +198,7 @@ namespace HOLD
 		return a.u_double;
 	}
 
-	inline short GetInfluenceValue(std::array<double, 256*256> & inf_map, const int& posX, const int& posY)
+	inline short GetInfluenceValue(std::array<double, 256*256>& inf_map, const int& posX, const int& posY)
 	{
 		int x = posX % 32;
 		int y = posY % 32;
@@ -200,20 +211,5 @@ namespace HOLD
 			return Grid::GetRightBot(inf_map[posY / 32 * Broodwar->mapHeight() + posX / 32]);
 		else// if (x < 16 && y > 16)
 			return Grid::GetLeftBot(inf_map[posY / 32 * Broodwar->mapHeight() + posX / 32]);
-	};
-
-	inline short GetInfluenceValue(std::vector<Grid> & inf_map, Position & pos)
-	{
-		int x = pos.x % 32;
-		int y = pos.y % 32;
-
-		if (x < 16 && y < 16)
-			return inf_map[pos.y / 32 * Broodwar->mapHeight() + pos.x / 32].GetLeftTop();
-		else if (x > 16 && y < 16)
-			return inf_map[pos.y / 32 * Broodwar->mapHeight() + pos.x / 32].GetRightTop();
-		else if (x > 16 && y > 16)
-			return inf_map[pos.y / 32 * Broodwar->mapHeight() + pos.x / 32].GetRightBot();
-		else// if (x < 16 && y > 16)
-			return inf_map[pos.y / 32 * Broodwar->mapHeight() + pos.x / 32].GetLeftBot();
 	};
 }//namespace HOLD

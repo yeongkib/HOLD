@@ -1,12 +1,12 @@
 #include "Precompiled.hpp"
 #include "UnitInfo.hpp"
 
-UnitInfo::UnitInfo(BWAPI::Unit unit) :
+UnitInfo::UnitInfo(const BWAPI::Unit unit) :
+m_unit(unit),
 m_lastType(unit->getType()),
 m_id(unit->getID()),
 m_lastPosition(unit->getPosition()),
 m_lastSeen(Broodwar->getFrameCount()),
-m_unit(unit),
 m_lastPlayer(unit->getPlayer())
 {
 	//const int currentFrame = m_lastSeen % 240;
@@ -48,19 +48,19 @@ Unit UnitInfo::operator()() const
 //unsigned short UnitInfo::GetAverageHP(unsigned int term, int currentframe) const
 float UnitInfo::GetAverageHP(unsigned int term, int currentframe) const
 {
-	float sumHp{ 0.f };
-	for (int i = 0; i < term; ++i)
-		sumHp += m_prevHP[((currentframe + i) % 256 )];
+	float sum_hp{ 0.f };
+	for (auto i = 0; i < term; ++i)
+		sum_hp += m_prevHP[((currentframe + i) % 256 )];
 
 		//averageHp += m_prevHP[((currentframe + i) % 256 + 256) % 256];;
-	m_avgHp = sumHp / static_cast<float>(term);
+	m_avgHp = sum_hp / static_cast<float>(term);
 	return m_avgHp;
 }
 //unsigned short UnitInfo::GetAverageShield(unsigned int term, int currentframe) const
 float UnitInfo::GetAverageShield(unsigned int term, int currentframe) const
 {
 	float sumShield{ 0.f };
-	for (int i = 0; i < term; ++i)
+	for (auto i = 0; i < term; ++i)
 		sumShield += m_prevShield[((currentframe + i) % 256)];
 
 		//averageShield += m_prevShield[((currentframe + i) % 256 + 256) % 256];
@@ -77,7 +77,6 @@ int UnitInfo::GetShieldVariance(unsigned int term, int currentframe) const
 {
 	return static_cast<int>(m_prevShield[(currentframe - term) % 256] - m_prevShield[currentframe % 256]);
 }
-
 
 bool UnitInfo::CanUseTech(TechType tech) const
 {
@@ -98,7 +97,7 @@ bool UnitInfo::UseTech(BWAPI::TechType tech, Unit pTarget, int targBit)
 	if (m_unit->useTech(tech, pTarget)) // Use the tech!
 	{
 		UnitInfo(pTarget).SetTargetFlags(targFlags | targBit);
-		SetVirtualUnitOrder((Orders::Enum::Enum)tech.getOrder().getID());
+		SetVirtualUnitOrder(static_cast<Orders::Enum::Enum>(tech.getOrder().getID()));
 		return true;
 	}
 	return false;   // If the tech failed

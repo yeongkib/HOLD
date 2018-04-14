@@ -9,6 +9,7 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 
 namespace HOLD
@@ -38,16 +39,16 @@ namespace HOLD
 		uQuarter quarter;
 
 		Grid();
-		explicit Grid(int sameValue);
-		explicit Grid(short sameValue);
-		explicit Grid(short LeftTop, short RightTop = 0, short LeftBot = 0, short RightBot = 0);
+		explicit Grid(const int& sameValue);
+		explicit Grid(const short& sameValue);
+		explicit Grid(short LeftTop, short RightTop, short LeftBot, short RightBot);
 		Grid(double grid);
-		~Grid() {};
+		~Grid() = default;
 
-		void SetLeftTop(short value = 0);
-		void SetRightTop(short value = 0);
-		void SetLeftBot(short value = 0);
-		void SetRightBot(short value = 0);
+		void SetLeftTop(const short& value);
+		void SetRightTop(const short& value);
+		void SetLeftBot(const short& value);
+		void SetRightBot(const short& value);
 
 		short GetLeftTop() const;
 		short GetRightTop() const;
@@ -57,21 +58,21 @@ namespace HOLD
 		int GetTotal();
 		bool IsAllSame();
 
-		bool static IsAllSame(double& grid);
-		short static GetLeftTop(double& grid);
-		short static GetRightTop(double& grid);
-		short static GetLeftBot(double& grid);
-		short static GetRightBot(double& grid);
+		bool static IsAllSame(const double& grid);
+		short static GetLeftTop(const double& grid);
+		short static GetRightTop(const double& grid);
+		short static GetLeftBot(const double& grid);
+		short static GetRightBot(const double& grid);
 
-		Grid Grid::operator+(const int & value) const;
-		Grid Grid::operator+(const Grid & rhs) const;
-		Grid Grid::operator-(const int & value) const;
-		Grid Grid::operator-(const Grid & rhs) const;
-		bool Grid::operator!=(short value);
-		bool Grid::operator==(short value);
-		Grid& operator=(const Grid& rhs);
-		Grid& operator=(const int & value);
-		short& Grid::operator[] (const int index);
-		const short& operator[] (const int index) const;
+		Grid operator+(const int& value) const;
+		Grid operator+(const Grid& rhs) const;
+		Grid operator-(const int& value) const;
+		Grid operator-(const Grid& rhs) const;
+		bool operator!=(const short& value);
+		bool operator==(const short& value);
+		Grid& operator=(const Grid& rhs) = default;
+		Grid& operator=(const int& value);
+		short& operator[] (const int& index);
+		const short& operator[] (const int& index) const;
 	};
 }//namespace HOLD

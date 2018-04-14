@@ -13,15 +13,14 @@ Copyright 2017, Digipen Institute of Technology
 #include "Precompiled.hpp"
 
 #include "IntelligenceCommand.hpp"
-#include <BWAPI/UnitCommand.h>
 #include "Grid.hpp"
 #include "../BWEM_1_3/bwem.h"
 
 #include "Drone.hpp"
+#include <BWAPI/UnitCommand.h>
 #include <BWAPI/Client/Event.h>
 
-namespace { auto & theMap = BWEM::Map::Instance(); }
-
+namespace { auto& theMap = BWEM::Map::Instance(); }
 
 namespace HOLD
 {
@@ -58,7 +57,8 @@ namespace HOLD
 	* 4.
 	*/
 
-	BWAPI::Position FindMostSafetyZone_Attack(std::array<double, 256*256> &inf_map, BWAPI::Position pos, BWAPI::Position& dir, bool ground = false) {
+	BWAPI::Position FindMostSafetyZone_Attack(std::array<double, 256*256>& inf_map, BWAPI::Position pos, BWAPI::Position& dir, bool ground = false)
+	{
 		std::vector<WalkPosition> candidates;
 
 		std::vector<bool> neighbor(8, false);
@@ -86,22 +86,26 @@ namespace HOLD
 		*/
 		// I don't think pos will be equal to dir. Which means the unit and target at the same position
 		// but just in case...
-		if (dir.x <= 0 && dir.y <= 0) {
+		if (dir.x <= 0 && dir.y <= 0)
+		{
 			neighbor[0] =
 			neighbor[1] =
 			neighbor[3] = true;
 		}
-		if (dir.x >= 0 && dir.y <= 0) {
+		if (dir.x >= 0 && dir.y <= 0)
+		{
 			neighbor[1] =
 			neighbor[2] =
 			neighbor[4] = true;
 		}
-		if (dir.x >= 0 && dir.y >= 0) {
+		if (dir.x >= 0 && dir.y >= 0)
+		{
 			neighbor[4] =
 			neighbor[6] =
 			neighbor[7] = true;
 		}
-		if (dir.x <= 0 && dir.y >= 0) {
+		if (dir.x <= 0 && dir.y >= 0)
+		{
 			neighbor[3] =
 			neighbor[5] =
 			neighbor[6] = true;
@@ -118,39 +122,48 @@ namespace HOLD
 
 			WalkPosition targetWalkPosition{ pos.x / 8 + dx, pos.y / 8 + dy };
 			
-			if (targetWalkPosition.isValid()) {
+			if (targetWalkPosition.isValid())
+			{
 				if (ground)
 					if (!Broodwar->isWalkable(targetWalkPosition))
 						continue;
 
 				const int influence = HOLD::GetInfluenceValue(inf_map, pos.x + std::get<0>(walktTileOffsets[i]), pos.y + std::get<1>(walktTileOffsets[i]));// inf_map[targetPosition.y * mapHeight + targetPosition.x];
 
-				if (influence < lowest) {
+				if (influence < lowest)
+				{
 					std::vector<WalkPosition>().swap(candidates);
 					candidates.push_back(targetWalkPosition);
 					lowest = influence;
-				} else if (lowest == influence) {
+				}
+				else if (lowest == influence)
+				{
 					candidates.push_back(targetWalkPosition);
 				}
 			}
 		}
 
-		if (candidates.size()) {
+		if (!candidates.empty())
+		{
 			Position returnPosition{ pos };
 			int closest = (std::numeric_limits<int>::max)();
 
-			for (WalkPosition candidate : candidates) {
+			for (WalkPosition candidate : candidates)
+			{
 				//not sure which function is better (getApproxDistance or getDistance)
 				Position target(candidate.x * 8 + pos.x % 8, candidate.y * 8 + pos.y % 8);
 				const int distance = pos.getApproxDistance(target);
 
-				if (distance < closest) {
+				if (distance < closest)
+				{
 					closest = distance;
 					returnPosition = target;
 				}
 			}
 			return returnPosition;
-		} else {
+		} 
+		else
+		{
 			if (candidates.empty())
 				return pos;
 			//Broodwar->leaveGame();
@@ -160,62 +173,72 @@ namespace HOLD
 	};
 
 	//todo : use astar within 2tile size with path length n for better place
-	BWAPI::Position FindMostSafetyZone_Flee(std::array<double, 256*256> &inf_map, BWAPI::Position pos, bool ground = false) {
+	BWAPI::Position FindMostSafetyZone_Flee(std::array<double, 256*256> &inf_map, BWAPI::Position pos, bool ground = false)
+	{
 		std::vector<WalkPosition> candidates;
 
 		int lowest = (std::numeric_limits<int>::max)();
-		for (int i = 0; i < 8; ++i) {
+		for (auto i = 0; i < 8; ++i)
+		{
 			int dx = std::get<0>(walktTileOffsets[i]);
 			int dy = std::get<1>(walktTileOffsets[i]);
 
 			WalkPosition targetWalkPosition{ pos.x / 8 + pos.x % 8 + dx, pos.y / 8 + pos.y % 8 + dy };
 			
-			if (targetWalkPosition.isValid()) {
+			if (targetWalkPosition.isValid())
+			{
 				if (ground)
 					if (!Broodwar->isWalkable(targetWalkPosition))
 						continue;
 
 				const int influence = HOLD::GetInfluenceValue(inf_map, pos.x + std::get<0>(walktTileOffsets[i]), pos.y + std::get<1>(walktTileOffsets[i]));// inf_map[targetPosition.y * mapHeight + targetPosition.x];
 
-				if (influence < lowest) {
+				if (influence < lowest)
+				{
 					std::vector<WalkPosition>().swap(candidates);
 					candidates.push_back(targetWalkPosition);
 					lowest = influence;
-				} else if (lowest == influence) {
+				}
+				else if (lowest == influence)
+				{
 					candidates.push_back(targetWalkPosition);
 				}
 			}
 		}
 
 		//todo : if all the candidates have same values, 
-		if (candidates.size()) {
+		if (!candidates.empty())
+		{
 			Position returnPosition{ pos };
 			int closest = (std::numeric_limits<int>::max)();
 
-			for (WalkPosition candidate : candidates) {
+			for (WalkPosition candidate : candidates)
+			{
 				Position target(candidate.x * 8 + pos.x % 8, candidate.y * 8 + pos.y % 8);
 
 				const int distance = pos.getApproxDistance(target);
 
-				if (distance < closest) {
+				if (distance < closest)
+				{
 					closest = distance;
 					returnPosition = target;
 				}
 			}
 			return returnPosition;
-		} else {
+		}
+		else
+		{
 			
 		}
 
 	};
 
-	IntelligenceCommand::IntelligenceCommand() : m_idStack(0), mapWidth(0), mapHeight(0), runflag(true) {
+	IntelligenceCommand::IntelligenceCommand() : mapWidth(0), mapHeight(0), runflag(true), m_idStack(0)
+	{
 	}
 
-	IntelligenceCommand::~IntelligenceCommand() {
-	}
-
-	void IntelligenceCommand::Init() {
+	void IntelligenceCommand::Init()
+	{
 		mapWidth = BWAPI::Broodwar->mapWidth();
 		mapHeight = BWAPI::Broodwar->mapHeight();
 
@@ -226,15 +249,18 @@ namespace HOLD
 		if(Broodwar->self())
 		starting = Broodwar->self()->getStartLocation();
 
-		if (runflag) {
+		if (runflag)
+		{
 			theMap.Initialize();
 			theMap.EnableAutomaticPathAnalysis();
 			bool startingLocationOK = theMap.FindBasesForStartingLocations();
 			assert(startingLocationOK);
 			startingLocations = theMap.StartingLocations();
 		
-			for (const BWEM::Area & area : theMap.Areas()) {
-				for (const BWEM::Base & base : area.Bases()) {
+			for (const BWEM::Area & area : theMap.Areas())
+			{
+				for (const BWEM::Base & base : area.Bases())
+				{
 					/*if (starting.x == base.Location().x
 					&& starting.y == base.Location().y)*/
 					{
@@ -253,13 +279,18 @@ namespace HOLD
 
 			const BWEM::Area * pMyStartingArea = theMap.GetArea(myStartingPos);
 			BWEM::utils::really_remove_if(enemyBaseCandidate, [pMyStartingArea](TilePosition t)
-			{ return !theMap.GetArea(t)->AccessibleFrom(pMyStartingArea); });
+			{
+				return !theMap.GetArea(t)->AccessibleFrom(pMyStartingArea);
+			});
 
-			if (enemyBaseCandidate.size() > 2) {
+			if (enemyBaseCandidate.size() > 2)
+			{
 				// sorts m_HisPossibleLocations, making each element the nearest one from the previous one
-				for (int i = 1; i < (int)enemyBaseCandidate.size(); ++i) {
-					TilePosition lastPos = enemyBaseCandidate[i - 1];
-					for (int j = i + 1; j < (int)enemyBaseCandidate.size(); ++j) {
+				for (auto i = 1; i < enemyBaseCandidate.size(); ++i)
+				{
+					const TilePosition lastPos = enemyBaseCandidate[i - 1];
+					for (auto j = i + 1; j < enemyBaseCandidate.size(); ++j)
+					{
 						int groundDist_lastPos_i;
 						int groundDist_lastPos_j;
 						theMap.GetPath(Position(lastPos), Position(enemyBaseCandidate[i]), &groundDist_lastPos_i);
@@ -273,12 +304,14 @@ namespace HOLD
 
 			//https://stackoverflow.com/questions/6989100/sort-points-in-clockwise-order
 			TilePosition center = TilePosition(Broodwar->mapWidth() / 2, Broodwar->mapHeight() / 2);
-			auto less = [&center](TilePosition a, TilePosition b)->bool {
+			auto less = [&center](TilePosition a, TilePosition b)->bool
+			{
 				if (a.x - center.x >= 0 && b.x - center.x < 0)
 					return true;
 				if (a.x - center.x < 0 && b.x - center.x >= 0)
 					return false;
-				if (a.x - center.x == 0 && b.x - center.x == 0) {
+				if (a.x - center.x == 0 && b.x - center.x == 0)
+				{
 					if (a.y - center.y >= 0 || b.y - center.y >= 0)
 						return a.y > b.y;
 					return b.y > a.y;
@@ -304,12 +337,16 @@ namespace HOLD
 		InitInfluenceMaps();
 	}
 
-	void IntelligenceCommand::Update(int dt) {
-		if (runflag) {
+	void IntelligenceCommand::Update(int dt)
+	{
+		if (runflag)
+		{
 			UpdateLifePoint();
 
-			for (const BWEM::Area & area : theMap.Areas()) {
-				for (const BWEM::Base & base : area.Bases()) {
+			for (const BWEM::Area & area : theMap.Areas())
+			{
+				for (const BWEM::Base & base : area.Bases())
+				{
 					/*if (starting.x == base.Location().x
 					&& starting.y == base.Location().y)*/
 					{
@@ -332,9 +369,11 @@ namespace HOLD
 
 								//todo : call updateinfluences, updateGrid
 								// Iterate through all the units that we own
-			for (auto player : Broodwar->enemies()) {
-				for (const auto &enemyUnits : Units[player]) {
-					for (const auto u : enemyUnits.second)
+			for (auto player : Broodwar->enemies())
+			{
+				for (const auto &enemy_units : Units[player])
+				{
+					for (const auto u : enemy_units.second)
 						//for(auto & u : Broodwar->enemy()->getUnits())
 					{
 						if (u->getPosition() != Positions::Unknown) {
@@ -346,14 +385,22 @@ namespace HOLD
 
 			Position attackPosition{};
 
-			if (!enemyBase.empty()) {
+			if (!enemyBase.empty())
+			{
 				attackPosition = Position{ enemyBase[0].x * 32, enemyBase[0].y * 32 };
-			} else if (!enemyBaseCandidate.empty()) {
+			}
+			else if (!enemyBaseCandidate.empty())
+			{
 				attackPosition = Position{ enemyBaseCandidate[0].x * 32, enemyBaseCandidate[0].y * 32 };
-			} else {
-				for (const auto &enemyUnits : Units[Broodwar->enemy()]) {
-					for (const auto u : enemyUnits.second) {
-						if (u->getType().isBuilding()) {
+			}
+			else 
+			{
+				for (const auto &enemyUnits : Units[Broodwar->enemy()])
+				{
+					for (const auto u : enemyUnits.second)
+					{
+						if (u->getType().isBuilding())
+						{
 							attackPosition = u->getPosition();
 							break;
 						}
@@ -362,7 +409,8 @@ namespace HOLD
 						break;
 				}
 			}
-			for (auto & u : BWAPI::Broodwar->self()->getUnits()) {
+			for (auto & u : BWAPI::Broodwar->self()->getUnits())
+			{
 				// Ignore the unit if it no longer exists
 				// Make sure to include this block when handling any Unit pointer!
 				if (!u->exists())
@@ -407,10 +455,11 @@ namespace HOLD
 					int minimum_hit{ std::numeric_limits<int>::max() };
 					int minimum_time{ minimum_hit };
 
-					for (const auto& enemyInSight : enemiesInSight) {
+					for (const auto& enemyInSight : enemiesInSight)
+					{
 						if (!u->canAttackUnit(enemyInSight)) continue;
 
-						int total_life = enemyInSight->getHitPoints() + enemyInSight->getShields();
+						const int total_life = enemyInSight->getHitPoints() + enemyInSight->getShields();
 						int damageto = BWAPI::Broodwar->getDamageTo(enemyInSight->getType(), type, enemyInSight->getPlayer(), BWAPI::Broodwar->self());
 						if (damageto == 0) // todo: add sumvalues for the spell units
 							continue;
@@ -419,10 +468,12 @@ namespace HOLD
 						if (total_life % damageto != 0)
 							hitsToKill += 1;
 
-						if (hitsToKill == minimum_hit) {
+						if (hitsToKill == minimum_hit)
+						{
 							candidates.emplace_back(std::make_pair(enemyInSight, hitsToKill));
 						}
-						if (hitsToKill < minimum_hit) {
+						if (hitsToKill < minimum_hit)
+						{
 							minimum_hit = hitsToKill;
 							candidates.clear();
 							candidates.emplace_back(std::make_pair(enemyInSight, hitsToKill));
@@ -431,26 +482,34 @@ namespace HOLD
 
 					Unit target{};
 
-					for (const auto& candidate : candidates) {
-						bool targetInAir = candidate.first->isFlying();
-						int weapon_cooldown = targetInAir ? u->getGroundWeaponCooldown() : u->getAirWeaponCooldown();
-						int timeToKill = weapon_cooldown + (candidate.second - 1) * BWAPI::Broodwar->self()->weaponDamageCooldown(type);
+					for (const auto& candidate : candidates)
+					{
+						const bool target_in_air = candidate.first->isFlying();
+						const int weapon_cooldown = target_in_air ? u->getGroundWeaponCooldown() : u->getAirWeaponCooldown();
+						const int time_to_kill = weapon_cooldown + (candidate.second - 1) * BWAPI::Broodwar->self()->weaponDamageCooldown(type);
 
 
-						if (timeToKill < minimum_time) {
-							minimum_time = timeToKill;
+						if (time_to_kill < minimum_time)
+						{
+							minimum_time = time_to_kill;
 							target = candidate.first;
 						}
 					}
 
-					if (target) {
-						if (!u || !u->exists() || u->getPlayer() != BWAPI::Broodwar->self() ||
-						    !target || !target->exists()) {
+					if (target)
+					{
+						if (!u
+						 || !u->exists()
+						 || u->getPlayer() != BWAPI::Broodwar->self()
+						 || !target
+						 || !target->exists())
+						{
 							continue;
 						}
 
 						// if we have issued a command to this unit already this frame, ignore this one
-						if (u->getLastCommandFrame() >= BWAPI::Broodwar->getFrameCount() || u->isAttackFrame()) {
+						if (u->getLastCommandFrame() >= BWAPI::Broodwar->getFrameCount() || u->isAttackFrame())
+						{
 							continue;
 						}
 
@@ -458,7 +517,8 @@ namespace HOLD
 						BWAPI::UnitCommand currentCommand(u->getLastCommand());
 
 						// if we've already told this unit to attack this target, ignore this command
-						if (currentCommand.getType() == BWAPI::UnitCommandTypes::Attack_Unit &&	currentCommand.getTarget() == target) {
+						if (currentCommand.getType() == BWAPI::UnitCommandTypes::Attack_Unit &&	currentCommand.getTarget() == target) 
+						{
 							continue;
 						}
 
@@ -467,9 +527,10 @@ namespace HOLD
 
 						Position targetpos = target->getPosition();
 						if (targetpos != Positions::Invalid
-							&& targetpos != Positions::None
-							&& targetpos != Positions::Unknown
-							&& targetpos != Positions::Origin) {
+						 && targetpos != Positions::None
+						 && targetpos != Positions::Unknown
+						 && targetpos != Positions::Origin)
+						{
 							BWAPI::Position fleeVec(u->getPosition() - targetpos);
 							double fleeAngle = atan2(fleeVec.y, fleeVec.x);
 							fleeVec = BWAPI::Position(static_cast<int>(64.0 * cos(fleeAngle)), static_cast<int>(64.0 * sin(fleeAngle)));
@@ -490,11 +551,13 @@ namespace HOLD
 					}
 				}
 
-				if (runflag) {
-					if (BWAPI::Broodwar->getFrameCount() % 25 == 0) {
+				if (runflag) 
+				{
+					if (BWAPI::Broodwar->getFrameCount() % 25 == 0)
+					{
 						const bool targetAlreadyReached = !BWEM::utils::contains(enemyBaseCandidate, TilePosition(u->getTargetPosition()));
-						if (targetAlreadyReached ||
-							u->getPosition().getApproxDistance(u->getTargetPosition() + Position(UnitType(UnitTypes::Terran_Command_Center).tileSize()) / 2) < 32 * 6)
+						if (targetAlreadyReached
+						 || u->getPosition().getApproxDistance(u->getTargetPosition() + Position(UnitType(UnitTypes::Terran_Command_Center).tileSize()) / 2) < 32 * 6)
 						{
 							if (enemyBaseCandidate.size() > 1)
 								if (!targetAlreadyReached)
@@ -502,24 +565,33 @@ namespace HOLD
 						}
 
 						//todo fix it
-						if (u->getType() == UnitTypes::Zerg_Zergling) {
-							if (Units[Broodwar->self()][u->getType()].size() >= 2) {
+						if (u->getType() == UnitTypes::Zerg_Zergling)
+						{
+							if (Units[Broodwar->self()][u->getType()].size() >= 2)
+							{
 								if (!(u->getOrder() == Orders::AttackMove)
-								 || !(u->getOrder() == Orders::AttackUnit)) {
+								 || !(u->getOrder() == Orders::AttackUnit))
+								{
 									u->issueCommand(BWAPI::UnitCommand::attack(nullptr, attackPosition));
 								}
 							}
-						} else if (u->getType() == UnitTypes::Zerg_Mutalisk) {
+						}
+						else if (u->getType() == UnitTypes::Zerg_Mutalisk)
+						{
 							if (firstattack_mutal || Units[Broodwar->self()][u->getType()].size() >= 10)
 								if (!(u->getOrder() == Orders::AttackMove)
-							     || !(u->getOrder() == Orders::AttackUnit)) {
+							     || !(u->getOrder() == Orders::AttackUnit))
+								{
 									firstattack_mutal = true;
 									u->issueCommand(BWAPI::UnitCommand::attack(nullptr, attackPosition));
 								}
-						} else if (u->getType() == UnitTypes::Zerg_Hydralisk) {
+						} 
+						else if (u->getType() == UnitTypes::Zerg_Hydralisk)
+						{
 							if (firstattack_hydra || Units[Broodwar->self()][u->getType()].size() >= 20)
 								if (!(u->getOrder() == Orders::AttackMove)
-								 || !(u->getOrder() == Orders::AttackUnit)) {
+								 || !(u->getOrder() == Orders::AttackUnit))
+								{
 									firstattack_hydra = true;
 									u->issueCommand(BWAPI::UnitCommand::attack(nullptr, attackPosition));
 								}
@@ -536,10 +608,11 @@ namespace HOLD
 			UnitTypes::Zerg_Drone,
 			UnitTypes::Zerg_Zergling,
 			UnitTypes::Zerg_Hydralisk,
-			UnitTypes::Zerg_Mutalisk
-		}) {
+			UnitTypes::Zerg_Mutalisk })
+		{
 			const auto i = Units[Broodwar->self()][lists];
-			if (i.size()) {
+			if (!i.empty()) 
+			{
 				Broodwar->drawTextScreen(5, uy, "%s %d", lists.c_str(), i.size());
 				uy += 10;
 			}
@@ -552,20 +625,24 @@ namespace HOLD
 			UnitTypes::Zerg_Extractor,
 			UnitTypes::Zerg_Spawning_Pool,
 			UnitTypes::Zerg_Hydralisk_Den,
-			UnitTypes::Zerg_Spire
-		}) {
+			UnitTypes::Zerg_Spire }) 
+		{
 			const auto i = Units[Broodwar->self()][lists];
-			if (i.size()) {
+			if (!i.empty()) 
+			{
 				Broodwar->drawTextScreen(150, by, "%s %d", lists.c_str(), i.size());
 				by += 10;
 			}
 		}
 
 		int ey = 50;
-		for (auto eus : Units[Broodwar->enemy()]) {
+		for (auto eus : Units[Broodwar->enemy()])
+		{
 			auto us = Units[Broodwar->enemy()].find(eus.first);
-			if (us != Units[Broodwar->enemy()].end()) {
-				if (us->second.size()) {
+			if (us != Units[Broodwar->enemy()].end())
+			{
+				if (!us->second.empty())
+				{
 					//Broodwar->drawTextScreen(280, ey, "%s %d", (*us->second.m_units.begin())->getType().getName().c_str(), us->second.m_units.size());
 					Broodwar->drawTextScreen(280, ey, "%s %d", UnitType(eus.first).c_str(), us->second.size());
 					ey += 10;
@@ -574,27 +651,34 @@ namespace HOLD
 		}
 	}
 
-	void IntelligenceCommand::Shutdown() {
-		for (auto ds : Units) {
+	void IntelligenceCommand::Shutdown() 
+	{
+		for (auto ds : Units)
+		{
 			ds.second.clear();
 		}
 	}
 
-	void IntelligenceCommand::ProcessMessage(Message* message) {
+	void IntelligenceCommand::ProcessMessage(Message* message)
+	{
 	}
 
-	void IntelligenceCommand::BroadcastMessage(Message* message) {
+	void IntelligenceCommand::BroadcastMessage(Message* message)
+	{
 	}
 	
-	const int IntelligenceCommand::GetMapHeight() const {
+	int IntelligenceCommand::GetMapHeight() const
+	{
 		return mapHeight;
 	}
 
-	const int IntelligenceCommand::GetMapWidth() const {
+	int IntelligenceCommand::GetMapWidth() const
+	{
 		return mapWidth;
 	}
 
-	void IntelligenceCommand::UpdateGrid() {
+	void IntelligenceCommand::UpdateGrid()
+	{
 		std::transform(grids[std::string{ "tensionGround" }].begin(), grids[std::string{ "tensionGround" }].end(), grids[std::string{ "influenceGround" }].begin(),
 			grids[std::string{ "vulGround" }].begin(), [](double &first, double &second)->double
 		{
@@ -614,42 +698,49 @@ namespace HOLD
 		});
 	}
 
-	Vgrid* IntelligenceCommand::GetGridMap(const std::string& name) {
+	Vgrid* IntelligenceCommand::GetGridMap(const std::string& name)
+	{
 		//todo : assert if not found
 		auto it = grids.find(name);
-		if (it != grids.end()) {
+		if (it != grids.end())
+		{
 			return &it->second;
 		}
 
 		return nullptr;
 	}
 
-	void IntelligenceCommand::UpdateBulletInfo() {
-		for (auto &b : Broodwar->getBullets()) {
+	void IntelligenceCommand::UpdateBulletInfo()
+	{
+		for (auto &b : Broodwar->getBullets())
+		{
 			Position p = b->getPosition();
 			double velocityX = b->getVelocityX();
 			double velocityY = b->getVelocityY();
 
 			if (b->getType() == BulletTypes::Enum::Psionic_Storm
-			 || b->getType() == BulletTypes::Enum::Plague_Cloud) {
+			 || b->getType() == BulletTypes::Enum::Plague_Cloud)
+			{
 				// Broodwar->drawCircleMap(b->getPosition(), 50, Colors::Red);
 				UpdateInfluences(b);
 			}
 		}
 	}
 
-	void IntelligenceCommand::UpdateInfluences(const Bullet b) {
-		if (b->getType() == BulletTypes::Enum::Psionic_Storm) {
+	void IntelligenceCommand::UpdateInfluences(Bullet b)
+	{
+		if (b->getType() == BulletTypes::Enum::Psionic_Storm)
+		{
 			constexpr int storms[61] = { 
-											14, 14, 14, 14, 14, 14, 14, 14,
-											28, 28, 28, 28, 28, 28, 28,
-											42, 42, 42, 42, 42, 42, 42,
-											56, 56, 56, 56, 56, 56, 56,
-											70, 70, 70, 70, 70, 70, 70,
-											84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84,
-											98, 98, 98, 98, 98, 98, 98,
-											112, 112, 112, 112
-										};
+				14, 14, 14, 14, 14, 14, 14, 14,
+				28, 28, 28, 28, 28, 28, 28,
+				42, 42, 42, 42, 42, 42, 42,
+				56, 56, 56, 56, 56, 56, 56,
+				70, 70, 70, 70, 70, 70, 70,
+				84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84,
+				98, 98, 98, 98, 98, 98, 98,
+				112, 112, 112, 112 };
+
 			int xPos = b->getPosition().x;// / 32;
 			int yPos = b->getPosition().y;// / 32;
 			float Radius = 50;
@@ -672,8 +763,10 @@ namespace HOLD
 			//int total_damage = basedamage * life;
 			int total_damage = storms[b->getRemoveTimer()];
 
-			for (int Y = StartY; Y < EndY; ++Y) {
-				for (int X = StartX; X < EndX; ++X) {
+			for (int Y = StartY; Y < EndY; ++Y)
+			{
+				for (int X = StartX; X < EndX; ++X)
+				{
 					SetInfluence(X, Y, xPos, yPos, total_damage, std::plus<short>(), 0, Radius,
 						5,
 						&GetGridMap(std::string{ "opinfluenceGround" })->at(Y * mapHeight + X),
@@ -694,7 +787,8 @@ namespace HOLD
 		}
 	}
 
-	void IntelligenceCommand::UpdateInfluences(const Unit u) {
+	void IntelligenceCommand::UpdateInfluences(Unit u)
+	{
 		if (u->getType() == UnitTypes::Terran_Bunker)// && !u->getLoadedUnits().empty())
 		{
 			//can it be recursive? nvm it doens't work without complete map info
@@ -738,8 +832,10 @@ namespace HOLD
 				int level = u->getPlayer()->getUpgradeLevel(groundWeapon.upgradeType());
 				int damage = (groundWeapon.damageAmount() + level * groundWeapon.damageBonus()) * 4;
 
-				for (int Y = groundStartY; Y < groundEndY; ++Y) {
-					for (int X = groundStartX; X < groundEndX; ++X) {
+				for (int Y = groundStartY; Y < groundEndY; ++Y)
+				{
+					for (int X = groundStartX; X < groundEndX; ++X)
+					{
 						SetInfluence(X, Y, x, y, damage, std::plus<short>(), 0, groundRadius,
 							4,
 							&GetGridMap(std::string{ "opinfluenceGround" })->at(Y * mapHeight + X),
@@ -753,7 +849,9 @@ namespace HOLD
 					}
 				}
 			}
-		} else {
+		}
+		else
+		{
 			int x = u->getPosition().x;// / 32;
 			int y = u->getPosition().y;// / 32;
 			WeaponType groundWeapon = u->getType().groundWeapon();
@@ -804,19 +902,25 @@ namespace HOLD
 			airEndX = Math::Clamp(airEndX, 0, mapWidth - 1);
 			airEndY = Math::Clamp(airEndY, 0, mapHeight - 1);
 
-			if (groundWeapon.damageAmount()) {
+			if (groundWeapon.damageAmount())
+			{
 				int level = u->getPlayer()->getUpgradeLevel(groundWeapon.upgradeType());
 				int damage = (groundWeapon.damageAmount() + level * groundWeapon.damageBonus());// *groundWeapon.damageFactor(); //
 				//int damage = static_cast<int>(static_cast<double>((groundWeapon.damageAmount() + level * groundWeapon.damageBonus())) * (static_cast<double>(groundWeapon.damageCooldown() - u->getGroundWeaponCooldown()) / static_cast<double>(groundWeapon.damageCooldown())));
 				if (damage)
-					for (int Y = groundStartY; Y < groundEndY; ++Y) {
-						for (int X = groundStartX; X < groundEndX; ++X) {
-							if (u->getPlayer() == Broodwar->self()) {
+					for (int Y = groundStartY; Y < groundEndY; ++Y)
+					{
+						for (int X = groundStartX; X < groundEndX; ++X)
+						{
+							if (u->getPlayer() == Broodwar->self())
+							{
 								SetInfluence(X, Y, x, y, damage, std::plus<short>(), groundWeapon.minRange(), groundRadius,
 									3, &GetGridMap(std::string{ "influenceGround" })->at(Y * mapHeight + X),
 									&GetGridMap(std::string{ "tensionGround" })->at(Y * mapHeight + X),
 									&GetGridMap(std::string{ "tensionTotal" })->at(Y * mapHeight + X));
-							} else {//if enemy
+							} 
+							else //if enemy
+							{
 								SetInfluence(X, Y, x, y, damage, std::plus<short>(), groundWeapon.minRange(), groundRadius,
 									3, &GetGridMap(std::string{ "opinfluenceGround" })->at(Y * mapHeight + X),
 									&GetGridMap(std::string{ "tensionGround" })->at(Y * mapHeight + X),
@@ -828,19 +932,25 @@ namespace HOLD
 					}
 			}
 			//todo : if(airweapon == groundweapon) pass airinfluence map at the sametime
-			if (airWeapon.damageAmount()) {
+			if (airWeapon.damageAmount())
+			{
 				int level = u->getPlayer()->getUpgradeLevel(airWeapon.upgradeType());
 				int damage = (airWeapon.damageAmount() + level * airWeapon.damageBonus());// *groundWeapon.damageFactor(); //
 				//int damage = static_cast<int>(static_cast<double>((airWeapon.damageAmount() + level * airWeapon.damageBonus())) * (static_cast<double>(airWeapon.damageCooldown() - u->getAirWeaponCooldown()) / static_cast<double>(airWeapon.damageCooldown())));
 				if (damage)
-					for (int Y = airStartY; Y < airEndY; ++Y) {
-						for (int X = airStartX; X < airEndX; ++X) {
-							if (u->getPlayer() == Broodwar->self()) {
+					for (int Y = airStartY; Y < airEndY; ++Y)
+					{
+						for (int X = airStartX; X < airEndX; ++X)
+						{
+							if (u->getPlayer() == Broodwar->self())
+							{
 								SetInfluence(X, Y, x, y, damage, std::plus<short>(), airWeapon.minRange(), airRadius,
 									3, &GetGridMap(std::string{ "influenceAir" })->at(Y * mapHeight + X),
 									&GetGridMap(std::string{ "tensionAir" })->at(Y * mapHeight + X),
 									&GetGridMap(std::string{ "tensionTotal" })->at(Y * mapHeight + X));
-							} else {//if enemy
+							}
+							else //if enemy
+							{
 								SetInfluence(X, Y, x, y, damage, std::plus<short>(), airWeapon.minRange(), airRadius,
 									3, &GetGridMap(std::string{ "opinfluenceAir" })->at(Y * mapHeight + X),
 									&GetGridMap(std::string{ "tensionAir" })->at(Y * mapHeight + X),
@@ -854,8 +964,9 @@ namespace HOLD
 		}
 	}
 
-	void IntelligenceCommand::InitInfluenceMaps() {
-		std::array<double, 256 * 256> maps;
+	void IntelligenceCommand::InitInfluenceMaps() 
+	{
+		std::array<double, 256 * 256> maps{};
 		grids[std::string{"opinfluenceGround"}] = maps;
 		grids[std::string{"opinfluenceAir"}]    = maps;
 		grids[std::string{"influenceGround"}]   = maps;
@@ -868,21 +979,26 @@ namespace HOLD
 		grids[std::string{"vulTotal"}]          = maps;
 	}
 
-	void IntelligenceCommand::ClearInfluenceMaps() {
-		for(auto grid: grids) {
+	void IntelligenceCommand::ClearInfluenceMaps()
+	{
+		for(auto grid: grids)
+		{
 			memset(&grid.second[0], 0, sizeof(grid.second[0]) * grid.second.size());
 		}
 	}
 
-	std::unordered_map<BWAPI::Player, std::unordered_map<int, UnitInfoset>>* IntelligenceCommand::GetUnitDataSets() {
+	std::unordered_map<BWAPI::Player, std::unordered_map<int, UnitInfoset>>* IntelligenceCommand::GetUnitDataSets()
+	{
 		return &Units;
 	}
 
-	void IntelligenceCommand::AddUnit(Unit u) {
+	void IntelligenceCommand::AddUnit(Unit u)
+	{
 		Units[u->getPlayer()][u->getType()].emplace(new UnitInfo(u));
 	}
 
-	void IntelligenceCommand::OnUnitMorph(Unit unit) {
+	void IntelligenceCommand::OnUnitMorph(Unit unit)
+	{
 		UnitType unitType = unit->getType();
 
 		if (unitType.isBuilding())
@@ -893,8 +1009,10 @@ namespace HOLD
 		Units[unit->getPlayer()][unitType].AddUnit(unit);
 	}
 
-	void IntelligenceCommand::OnUnitCreate(Unit unit) {
-		if (unit->getPlayer() == Broodwar->self()) 	{
+	void IntelligenceCommand::OnUnitCreate(Unit unit)
+	{
+		if (unit->getPlayer() == Broodwar->self())
+		{
 			UnitType unitType = unit->getType();
 
 			//todo : uncomment these lines
@@ -913,18 +1031,24 @@ namespace HOLD
 		}
 	}
 
-	void IntelligenceCommand::OnUnitShow(Unit unit) {
-		if (Broodwar->self()->isEnemy(unit->getPlayer())) {
+	void IntelligenceCommand::OnUnitShow(Unit unit)
+	{
+		if (Broodwar->self()->isEnemy(unit->getPlayer()))
+		{
 			//since it's not the discover function, we should check whether it is in container or new
 			UnitType unitType = unit->getType();
 
-			if (unitType.isResourceDepot()) {
-				if (enemyBase.empty()) {
+			if (unitType.isResourceDepot())
+			{
+				if (enemyBase.empty())
+				{
 					auto IsExpansion = std::find(begin(startingLocations), end(startingLocations), unit->getTilePosition());
-					if (IsExpansion == end(startingLocations)) {
+					if (IsExpansion == end(startingLocations))
+					{
 						int shortest = std::numeric_limits<int>::max();
 						TilePosition orgBase{};
-						for (auto candidate : startingLocations) {
+						for (auto candidate : startingLocations)
+						{
 							int distance = unit->getTilePosition().getApproxDistance(candidate);
 							if (distance < shortest)
 								orgBase = candidate;
@@ -943,21 +1067,28 @@ namespace HOLD
 				//UnitDataSets[unit->getPlayer()][unitType].AddUnit(HOLD::UnitData(unit));
 
 				//if the container doesn't exist, it's new, just add it
-				if (Units[unit->getPlayer()].find(unitType) != Units[unit->getPlayer()].end()) {
+				if (Units[unit->getPlayer()].find(unitType) != Units[unit->getPlayer()].end())
+				{
 					Units[unit->getPlayer()][unitType].UpdateUnit(unit);
-				} else {
+				}
+				else
+				{
 					Units[unit->getPlayer()][unitType].AddUnit(unit);
 				}
 			}
 		}
 	}
 
-	void IntelligenceCommand::OnUnitDestroy(Unit unit) {
+	void IntelligenceCommand::OnUnitDestroy(Unit unit)
+	{
 		Units[unit->getPlayer()][unit->getType()].RemoveUnit(unit);
 
-		if (unit->getType().isMineralField()) {
+		if (unit->getType().isMineralField())
+		{
 			theMap.OnMineralDestroyed(unit);
-		} else if (unit->getType().isSpecialBuilding()) {
+		}
+		else if (unit->getType().isSpecialBuilding())
+		{
 			theMap.OnStaticBuildingDestroyed(unit);
 		}
 
@@ -965,9 +1096,12 @@ namespace HOLD
 			enemyBase.erase(std::find(enemyBase.begin(), enemyBase.end(), unit->getTilePosition()));
 	}
 
-	void IntelligenceCommand::UpdateLifePoint() {
-		for(auto units : Units[BWAPI::Broodwar->self()]) {
-			for(auto m_unit : units.second) {
+	void IntelligenceCommand::UpdateLifePoint()
+	{
+		for(auto units : Units[BWAPI::Broodwar->self()])
+		{
+			for(auto m_unit : units.second)
+			{
 				m_unit->m_prevHP[BWAPI::Broodwar->getFrameCount() % 256] = m_unit->m_unit->getHitPoints();
 			}
 		}

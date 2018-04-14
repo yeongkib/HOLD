@@ -9,6 +9,7 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 
 namespace HOLD
@@ -23,7 +24,7 @@ namespace HOLD
 	public:
 		~HeadQuarters();
 		void Initialize();
-		void Run();
+		void Run() const;
 		void Shutdown() const;
 
 		void BroadcastMessage(Message* message) const;

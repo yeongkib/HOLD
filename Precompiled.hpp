@@ -9,10 +9,16 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 
 //#include "Precompiled.hpp"
 //#include <bits/stdc++.h>
+#include "Reals.hpp"
+#include "Utilities.hpp"
+#include "Vector2.hpp"
+#include "Log.hpp"
+#include "Message.hpp"
 #include <vector>
 #include <set>
 #include <list>
@@ -22,16 +28,11 @@ Copyright 2017, Digipen Institute of Technology
 #include <unordered_set>
 #include <string>
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 #include <numeric>
 #include <array>
-#include <stdarg.h>
+#include <cstdarg>
 #include <BWAPI/Game.h>
-#include "Reals.hpp"
-#include "Utilities.hpp"
-#include "Vector2.hpp"
-#include "Log.hpp"
-#include "Message.hpp"
 
 typedef int frame;
 

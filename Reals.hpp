@@ -9,6 +9,7 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 
 namespace HOLD
@@ -150,8 +151,10 @@ namespace HOLD
 		template <typename T>
 		inline T Wrap(const T x, const T xMin, const T xMax)
 		{
-			return (x < xMin) ? (x + (xMax - xMin)) :
-				((x > xMax) ? (x - (xMax - xMin)) : x);
+			return
+			(x < xMin)
+			? (x + (xMax - xMin))
+			: ((x > xMax) ? (x - (xMax - xMin)) : x);
 		}
 
 		template <typename T>

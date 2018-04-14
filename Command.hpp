@@ -9,6 +9,7 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 
 #include "Message.hpp"
@@ -18,7 +19,7 @@ namespace HOLD
 	class Command
 	{
 	public:
-		virtual ~Command() {}
+		virtual ~Command() = default;
 		virtual void Init() = 0;
 		virtual void Update(int dt) = 0;
 		virtual void Shutdown() = 0;

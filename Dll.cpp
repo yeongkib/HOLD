@@ -9,12 +9,12 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #include "Precompiled.hpp"
+#include "HoldAIModule.hpp"
 
 #include <BWAPI.h>
 #include <Windows.h>
-
-#include "HoldAIModule.hpp"
 
 extern "C" __declspec(dllexport) void gameInit(BWAPI::Game* game) { BWAPI::BroodwarPtr = game; }
 BOOL APIENTRY DllMain( HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved )

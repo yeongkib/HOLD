@@ -9,6 +9,7 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 #include <ostream>
 #include <chrono>
@@ -25,27 +26,31 @@ extern std::chrono::time_point<std::chrono::system_clock> performancetimer_start
 
 #define START() performancetimer_start = std::chrono::system_clock::now()
 
-struct tracer {
+struct tracer
+{
 	std::ofstream fout;
 	std::ostream & cout;
 	tracer(std::ostream & cout, char const * file, int line, char const * fnc);
 	~tracer();
 
 	template<typename TF, typename ... TR>
-	void write(TF const& f, TR const& ... rest) {
+	void write(TF const& f, TR const& ... rest)
+	{
 		write_debug_output(cout, f);
 		cout << " ";
 		fout << " ";
 		write(rest...);
 	}
 	template<typename TF>
-	void write(TF const& f) {
+	void write(TF const& f)
+	{
 		write_debug_output(cout, f);
 	}
 	void write();
 
 	template<typename TF>
-	void write_debug_output(std::ostream & cout, TF const& f) {
+	void write_debug_output(std::ostream & cout, TF const& f)
+	{
 		cout << f;
 		fout << f;		
 	}

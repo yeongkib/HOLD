@@ -9,6 +9,7 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 
 #include "Command.hpp"
@@ -33,7 +34,7 @@ namespace HOLD
 	{
 	public:
 		LogisticsCommand();
-		virtual ~LogisticsCommand();
+		virtual ~LogisticsCommand() = default;
 
 		void Init() override;
 		void Update(int dt) override;
@@ -49,9 +50,9 @@ namespace HOLD
 		void InitStrategyVsP();
 		void InitStrategyVsT();
 
-		bool Build(UnitCommand & mt);
+		bool Build(UnitCommand& mt);
 
-		void AddOrder(const UnitType & ut, const int & count = 1, const int & priority = 0);
+		void AddOrder(const UnitType& ut, const int& count = 1, const int & priority = 0);
 		void AddOrder(const UpgradeType& ut, const int& count = 1, const int& priority = 0);
 		void AddOrder(const TechType& tt, const int& count = 1, const int& priority = 0);
 

@@ -9,14 +9,16 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 
 #include "Command.hpp"
 #include "HeadQuarters.hpp"
-#include <BWAPI/Client/UnitImpl.h>
 #include "UnitInfo.hpp"
 #include "UnitInfoset.hpp"
 #include <memory>
+#include <BWAPI/Client/UnitImpl.h>
+
 
 namespace HOLD
 {
@@ -28,7 +30,7 @@ namespace HOLD
 	{
 	public:
 		IntelligenceCommand();
-		virtual ~IntelligenceCommand();
+		virtual ~IntelligenceCommand() = default;
 
 		void Init() override;
 		void Update(int dt) override;
@@ -37,8 +39,8 @@ namespace HOLD
 		void BroadcastMessage(Message* message);
 		void UpdateLifePoint();
 
-		const int GetMapHeight() const;
-		const int GetMapWidth() const;
+		int GetMapHeight() const;
+		int GetMapWidth() const;
 
 		void UpdateGrid();
 
@@ -58,24 +60,26 @@ namespace HOLD
 			// start our reference point as usual
 			va_start(ap, n);
 
-			for (int i = 0; i < 4; ++i)
+			for (auto i = 0; i < 4; ++i)
 			{
-				int newtargetpos_x = targetpos_x * 32 + Neighbours_Walk[i].x;
-				int newtargetpos_y = targetpos_y * 32 + Neighbours_Walk[i].y;
+				const int newtargetpos_x = targetpos_x * 32 + Neighbours_Walk[i].x;
+				const int newtargetpos_y = targetpos_y * 32 + Neighbours_Walk[i].y;
 
 				// make influence fall off with distance:
-				float dist = Math::Distance(Vector2(curpos_x, curpos_y), Vector2(newtargetpos_x, newtargetpos_y));
+				const float dist = Math::Distance(Vector2(curpos_x, curpos_y), Vector2(newtargetpos_x, newtargetpos_y));
 				
-				int distinp = Position(curpos_x, curpos_y).getApproxDistance(Position(newtargetpos_x, newtargetpos_y));
+				const int distinp = Position(curpos_x, curpos_y).getApproxDistance(Position(newtargetpos_x, newtargetpos_y));
 
 				if (distinp > minRange
-					&& distinp <= maxRange + 8) {
-					if (distinp <= maxRange) {
+					&& distinp <= maxRange + 8)
+				{
+					if (distinp <= maxRange)
+					{
 						// make a copy of it
 						va_copy(hack, ap);
 											
 						// get the addresses for the variables we want to hack
-						for (int iter = 0; iter < n; ++iter)
+						for (auto iter = 0; iter < n; ++iter)
 						{
 							double* grid = va_arg(hack, double*);
 							Grid::uQuarter cell{*grid};
@@ -84,7 +88,9 @@ namespace HOLD
 							cell1         = cell.u_double;
 						}
 						va_end(hack);
-					} else {
+					} 
+					else
+					{
 						// make a copy of it
 						va_copy(hack, ap);
 
@@ -105,8 +111,8 @@ namespace HOLD
 		}
 
 		void UpdateBulletInfo();
-		void UpdateInfluences(const Bullet b);
-		void UpdateInfluences(const Unit u);
+		void UpdateInfluences(Bullet b);
+		void UpdateInfluences(Unit u);
 
 		void InitInfluenceMaps();
 		void ClearInfluenceMaps();

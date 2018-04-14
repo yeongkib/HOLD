@@ -9,6 +9,7 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 
 #include "Reals.hpp"
@@ -26,7 +27,7 @@ namespace HOLD
 		///2 dimensional vector.
 		struct Vector2
 		{
-			Vector2() {};
+			Vector2() = default;
 			explicit Vector2(float x, float y);
 			explicit Vector2(ConstRealPointer data);
 

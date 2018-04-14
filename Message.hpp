@@ -9,12 +9,14 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 namespace HOLD
 {
 	namespace MsgId
 	{
-		enum MessageType {
+		enum EMessageType
+		{
 			NONE,
 			TOTAL_TYPE
 		};
@@ -22,8 +24,8 @@ namespace HOLD
 	class Message
 	{
 	public:
-		Message(MsgId::MessageType id) : MessageId(id) {};
-		MsgId::MessageType MessageId;
-		virtual ~Message() {};
+		Message(MsgId::EMessageType id) : MessageId(id) {};
+		MsgId::EMessageType MessageId;
+		virtual ~Message() = default;
 	};
 }//namespace HOLD

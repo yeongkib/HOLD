@@ -10,6 +10,7 @@ This is the interface file for the Unitinfo
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 #include "UnitInfo.hpp"
 
@@ -41,17 +42,18 @@ namespace HOLD
 		/// return value for BWAPI interface functions that have encountered an error.
 		static const UnitInfoset none;
 
-		UnitInfoset& operator = (const UnitInfoset& other) {
+		UnitInfoset& operator = (const UnitInfoset& other)
+		{
 			clear();
 			std::copy(other.begin(), other.end(), std::inserter(*this, begin()));
 			return *this;
 		}
-		UnitInfoset() {};
-		UnitInfoset(const Unitset & unitset);
-		UnitInfo find(const int id);
-		void AddUnit(Unit & unit);
-		void RemoveUnit(const Unit & unit);
-		void UpdateUnit(Unit & unit);
+		UnitInfoset() = default;
+		UnitInfoset(const Unitset& unitset);
+		UnitInfo find(const int& id);
+		void AddUnit(Unit& unit);
+		void RemoveUnit(const Unit& unit);
+		void UpdateUnit(Unit& unit);
 
 		/// <summary>Calculates the average of all valid Unit positions in this set.</summary>
 		///
@@ -117,7 +119,7 @@ namespace HOLD
 		bool attack(Unit target, bool shiftQueueCommand = false) const;
 
 		/// @copydoc UnitInterface::build
-		bool build(UnitType type, TilePosition target = TilePositions::None) const;
+		bool build(const UnitType& type, const TilePosition& target = TilePositions::None) const;
 
 		/// @copydoc UnitInterface::buildAddon
 		bool buildAddon(UnitType type) const;

@@ -10,6 +10,7 @@ This is the interface file for the Unitinfo
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 
 #include "Precompiled.hpp"
@@ -22,7 +23,7 @@ using namespace Filter;
 class UnitInfo
 {
 public:
-	enum Enum
+	enum ETargetFlag
 	{
 		Nothing,
 
@@ -51,7 +52,7 @@ public:
 
 public:
 	friend class Unitinteface;
-	UnitInfo(){};// = delete;
+	UnitInfo()= default;// = delete;
 	UnitInfo(BWAPI::Unit unit);
 
 	UnitInfo &operator =(BWAPI::Unit unit);
@@ -367,8 +368,8 @@ public:
 	void updateInternalData();
 	void updateData();
 
-	std::array<unsigned short, 256> m_prevHP;
-	std::array<unsigned short, 256> m_prevShield;
+	std::array<unsigned short, 256> m_prevHP{};
+	std::array<unsigned short, 256> m_prevShield{};
 	Unit m_unit;
 
 //private:

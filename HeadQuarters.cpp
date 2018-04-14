@@ -18,7 +18,12 @@ namespace HOLD
 {
 	HeadQuarters* HeadQuarters::m_Instance = nullptr;
 
-	HeadQuarters::HeadQuarters() : m_StateManager(nullptr), m_Active(true), m_CurrentTime(0.f)
+	HeadQuarters::HeadQuarters()
+		: last_time(0),
+		  current_time(0),
+		  m_StateManager(nullptr),
+		  m_Active(true),
+		  m_CurrentTime(0.f)
 	{
 	}
 
@@ -37,7 +42,7 @@ namespace HOLD
 			it.second->Init();
 	}
 
-	void HeadQuarters::Run(void)
+	void HeadQuarters::Run() const
 	{
 		for each (auto& it in m_CommandList)
 		{

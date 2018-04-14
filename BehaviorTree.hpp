@@ -9,6 +9,7 @@ This is the interface file for the module
 Copyright 2017, Digipen Institute of Technology
 */
 /*****************************************************************************/
+
 #pragma once
 
 #include <iostream>
@@ -38,12 +39,14 @@ namespace HOLD
 		{
 		private:
 			std::vector<Node*> children;
+
 		public:
 			const std::vector<Node*>& getChildren() const { return children; }
 			void addChild(Node* child) { children.emplace_back(child); }
 			void addChildren(std::initializer_list<Node*>&& newChildren) { for (Node* child : newChildren) addChild(child); }
 			template <typename CONTAINER>
 			void addChildren(const CONTAINER& newChildren) { for (Node* child : newChildren) addChild(child); }
+
 		protected:
 			//todo: fix shuffle
 			//std::vector<Node*> childrenShuffled() const { std::vector<Node*> temp = children;  std::shuffle(temp.begin(), temp.end(), std::mt19937{ std::random_device() });  return temp; }
@@ -51,9 +54,11 @@ namespace HOLD
 			std::vector<Node*> childrenShuffled() const { return children; }
 		};
 
-		class Selector : public CompositeNode {
+		class Selector : public CompositeNode
+		{
 		public:
-			virtual bool run() override {
+			virtual bool run() override
+			{
 				for (Node* child : getChildren())
 				{
 					if (child->run())
@@ -66,7 +71,8 @@ namespace HOLD
 		class RandomSelector : public CompositeNode
 		{
 		public:
-			virtual bool run() override {
+			virtual bool run() override 
+			{
 				for (Node* child : childrenShuffled())
 				{
 					if (child->run())
@@ -76,9 +82,11 @@ namespace HOLD
 			}
 		};
 
-		class Sequence : public CompositeNode {
+		class Sequence : public CompositeNode
+		{
 		public:
-			virtual bool run() override {
+			virtual bool run() override
+			{
 				for (Node* child : getChildren())
 				{
 					if (!child->run())
@@ -93,34 +101,52 @@ namespace HOLD
 		private:
 			Node* child; // It should be only one
 		protected:
-			Node* getChild() const { return child; }
+			Node* getChild() const
+			{
+				return child;
+			}
 		public:
-			void setChild(Node* newChild) { child = newChild; }
+			void setChild(Node* newChild)
+			{
+				child = newChild;
+			}
 		};
 
 		class Root : public DecoratorNode
 		{
 		private:
 			friend class BehaviorTree;
-			virtual bool run() override { return getChild()->run(); }
+			virtual bool run() override
+			{
+				return getChild()->run();
+			}
 		};
 
 		class Inverter : public DecoratorNode
 		{
 		private:
-			virtual bool run() override { return !getChild()->run(); }
+			virtual bool run() override
+			{
+				return !getChild()->run();
+			}
 		};
 
 		class Succeeder : public DecoratorNode
 		{
 		private:
-			virtual bool run() override { getChild()->run();  return true; }
+			virtual bool run() override
+			{
+				getChild()->run();  return true;
+			}
 		};
 
 		class Failer : public DecoratorNode
 		{
 		private:
-			virtual bool run() override { getChild()->run();  return false; }
+			virtual bool run() override
+			{
+				getChild()->run();  return false;
+			}
 		};
 
 		class Repeater : public DecoratorNode
@@ -129,10 +155,12 @@ namespace HOLD
 			int numRepeats;
 			static const int NOT_FOUND = -1;
 			Repeater(int num = NOT_FOUND) : numRepeats(num) {}
-			virtual bool run() override {
+			virtual bool run() override 
+			{
 				if (numRepeats == NOT_FOUND)
 					while (true) getChild()->run();
-				else {
+				else
+				{
 					for (int i = 0; i < numRepeats - 1; i++)
 						getChild()->run();
 					return getChild()->run();
@@ -143,7 +171,8 @@ namespace HOLD
 		class RepeatUntilFail : public DecoratorNode
 		{
 		private:
-			virtual bool run() override {
+			virtual bool run() override
+			{
 				while (getChild()->run()) {}
 				return true;
 			}
@@ -165,7 +194,8 @@ namespace HOLD
 		public:
 			PushToStack(T*& t, std::stack<T*>& s) : StackNode<T>(s), item(t) {}
 		private:
-			virtual bool run() override {
+			virtual bool run() override
+			{
 				this->stack.push(item);
 				return true;
 			}
@@ -180,7 +210,8 @@ namespace HOLD
 		public:
 			GetStack(std::stack<T*>& s, const std::stack<T*>& o, T* t = nullptr) : StackNode<T>(s), obtainedStack(o), object(t) {}
 		private:
-			virtual bool run() override {
+			virtual bool run() override
+			{
 				this->stack = obtainedStack;
 				if (object)
 					this->stack.push(object);
@@ -196,7 +227,8 @@ namespace HOLD
 		public:
 			PopFromStack(T*& t, std::stack<T*>& s) : StackNode<T>(s), item(t) {}
 		private:
-			virtual bool run() override {
+			virtual bool run() override
+			{
 				if (this->stack.empty())
 					return false;
 				item = this->stack.top();
@@ -211,7 +243,8 @@ namespace HOLD
 		public:
 			StackIsEmpty(std::stack<T*>& s) : StackNode<T>(s) {}
 		private:
-			virtual bool run() override {
+			virtual bool run() override
+			{
 				return this->stack.empty();
 			}
 		};
@@ -223,7 +256,8 @@ namespace HOLD
 			T *&variable, *&object;
 		public:
 			SetVariable(T*& t, T*& obj) : variable(t), object(obj) {}
-			virtual bool run() override {
+			virtual bool run() override 
+			{
 				variable = object;
 				return true;
 			};
@@ -236,13 +270,22 @@ namespace HOLD
 			T*& object;  // Must use reference to pointer to work correctly.
 		public:
 			IsNull(T*& t) : object(t) {}
-			virtual bool run() override { return !object; }
+			virtual bool run() override
+			{
+				return !object;
+			}
 		};
 	public:
 		Root* root;
 	public:
 		BehaviorTree() : root(new Root) {}
-		void setRootChild(Node* rootChild) const { root->setChild(rootChild); }
-		bool run() const { return root->run(); }
+		void setRootChild(Node* rootChild) const
+		{
+			root->setChild(rootChild);
+		}
+		bool run() const
+		{
+			return root->run();
+		}
 	};
 }

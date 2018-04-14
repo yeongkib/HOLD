@@ -18,7 +18,8 @@ Copyright 2017, Digipen Institute of Technology
 std::chrono::time_point<std::chrono::system_clock> performancetimer_start, performancetimer_end;
 
 tracer::tracer(std::ostream & cout, char const * file, int line, char const * fnc)
-	: cout(cout) {
+	: cout(cout)
+{
 	std::string outfilename = "logfile.txt";
 	fout.open(outfilename, std::ios_base::out | std::ios_base::app);
 
@@ -33,13 +34,15 @@ tracer::tracer(std::ostream & cout, char const * file, int line, char const * fn
 	fout.precision(6);
 	fout << std::setw(20) << file << ":" << std::setw(4) << line << ":" << std::setw(20) << fnc << "(): " << "time: " << elapsed_seconds.count() << ", ";
 }
-tracer::~tracer() {
+tracer::~tracer()
+{
 	cout << std::endl;
 	fout << std::endl;
 	fout.close();
 }
 
-void tracer::write() {
+void tracer::write() 
+{
 	//handle the empty params case
 }
 
